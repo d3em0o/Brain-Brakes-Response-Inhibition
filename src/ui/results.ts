@@ -47,9 +47,9 @@ export function renderGame2Results(summary: Game2Summary, comparison: GameCompar
   return `
     <section class="result-grid">
       <article class="stat-primary">
-        <span>BRAIN BRAKES</span>
-        <strong>${summary.inhibitionSuccesses} / ${summary.inhibitionTrials}</strong>
-        <small>falling hurdles correctly kept running</small>
+        <span>INHIBITION ACCURACY</span>
+        <strong>${summary.inhibitionSuccessPercent}%</strong>
+        <small>falling hurdles stopped</small>
       </article>
       <article><span>FALLING HURDLES</span><strong>${summary.inhibitionSuccesses} / ${summary.inhibitionTrials}</strong><small>correctly kept running</small></article>
       <article><span>NORMAL JUMPS</span><strong>${summary.goSummary.meanAbsoluteErrorMs} ms</strong><small>average timing error</small></article>
@@ -58,8 +58,8 @@ export function renderGame2Results(summary: Game2Summary, comparison: GameCompar
     <section class="comparison-panel">
       <h2>COMPARE YOUR JUMP TIMING</h2>
       <div class="comparison-stats">
-        <article><span>BEFORE FAKE-OUTS</span><strong>${comparison.baselineMeanAbsoluteErrorMs} ms</strong><small>${comparison.baselineOnTargetCount} / ${comparison.baselineCount} on target</small></article>
-        <article><span>DURING FAKE-OUTS</span><strong>${comparison.fakeoutGoMeanAbsoluteErrorMs} ms</strong><small>${comparison.fakeoutOnTargetCount} / ${comparison.fakeoutGoCount} on target</small></article>
+        <article><span>BEFORE FAKE-OUTS</span><strong>${comparison.baselineMeanAbsoluteErrorMs} ms</strong><small>${comparison.baselineOnTargetCount} / ${comparison.baselineCount} normal jumps on target</small></article>
+        <article><span>DURING FAKE-OUTS</span><strong>${comparison.fakeoutGoMeanAbsoluteErrorMs} ms</strong><small>${comparison.fakeoutOnTargetCount} / ${comparison.fakeoutGoCount} normal jumps on target</small></article>
         <article><span>DIFFERENCE</span><strong>${difference >= 0 ? '+' : ''}${difference} ms</strong><small>${differenceLabel}</small></article>
       </div>
     </section>

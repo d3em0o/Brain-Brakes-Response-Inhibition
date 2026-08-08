@@ -16,6 +16,7 @@ import {
   calculateRunningArmPose
 } from '../rendering/Runner';
 import { calculateGameComparison } from '../analysis/gameComparison';
+import { renderGame2Results } from '../ui/results';
 
 describe('Game 1 timing calculations', () => {
   it('starts a trial and records release time from monotonic timestamps', () => {
@@ -88,6 +89,13 @@ describe('Game 2 inhibition calculations', () => {
     expect(trial.releasedBeforeCue).toBe(false);
   });
 
+  it('subtracts points for failed inhibition without awarding jump timing points', () => {
+    const trial = stopTrial(800, 500);
+    expect(trial.inhibitionSuccess).toBe(false);
+    expect(trial.points).toBe(-50);
+    expect(trial.absoluteErrorMs).toBeUndefined();
+  });
+
   it('logs release before cue', () => {
     const trial = stopTrial(450, 500);
     expect(trial.releasedBeforeCue).toBe(true);
@@ -132,6 +140,11 @@ describe('Game 2 inhibition calculations', () => {
     const practice = { ...stopTrial(undefined, 500), practice: true };
     const summary = summarizeGame2([scored, practice], DEFAULT_CONFIG, 800);
     expect(summary.inhibitionTrials).toBe(1);
+  });
+
+  it('includes successful inhibition rewards and failed inhibition penalties in game score', () => {
+    const summary = summarizeGame2([goTrial(800, 2), stopTrial(undefined, 500), stopTrial(800, 500)], DEFAULT_CONFIG, 800);
+    expect(summary.score).toBe(150);
   });
 
   it('calculates mean SSD and SSRT', () => {
@@ -290,6 +303,38 @@ describe('personal Game 1 vs Game 2 jump comparison', () => {
     expect(comparison.differenceMs).toBe(30);
     expect(comparison.baselineCount).toBe(2);
     expect(comparison.fakeoutGoCount).toBe(2);
+  });
+});
+
+describe('Game 2 results display', () => {
+  it('labels inhibition accuracy separately and clarifies normal jump denominators', () => {
+    const html = renderGame2Results(
+      {
+        goSummary: summarizeGame1([goTrial(800, 2), goTrial(760, 2)], DEFAULT_CONFIG),
+        inhibitionTrials: 3,
+        inhibitionSuccesses: 2,
+        inhibitionSuccessPercent: 67,
+        meanSSDms: 550,
+        estimatedSSRTms: 250,
+        score: 150,
+        warnings: []
+      },
+      {
+        baselineMeanAbsoluteErrorMs: 20,
+        fakeoutGoMeanAbsoluteErrorMs: 40,
+        differenceMs: 20,
+        baselineOnTargetCount: 8,
+        fakeoutOnTargetCount: 2,
+        baselineCount: 10,
+        fakeoutGoCount: 7
+      }
+    );
+
+    expect(html).toContain('INHIBITION ACCURACY');
+    expect(html).toContain('<strong>67%</strong>');
+    expect(html).toContain('FALLING HURDLES');
+    expect(html).toContain('<strong>2 / 3</strong>');
+    expect(html).toContain('2 / 7 normal jumps on target');
   });
 });
 
