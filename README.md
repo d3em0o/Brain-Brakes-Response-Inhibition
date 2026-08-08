@@ -1,6 +1,6 @@
 # Brain Brakes
 
-Brain Brakes is a static browser game for an Exercise Science outreach activity. It contains two connected 2D Canvas mini-games:
+Brain Brakes is a static browser game for UOA Exersci outreach activity. It contains two connected 2D Canvas mini-games:
 
 - **Hurdle Timing:** hold Space to run, then release Space near the 800 ms take-off line.
 - **Hurdle Fake-Out:** prepare the same release, but keep holding if the hurdle collapses before take-off.
