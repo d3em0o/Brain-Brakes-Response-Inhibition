@@ -223,7 +223,7 @@ export class GameController {
         this.trialState = 'animating';
       }
       if (this.trialState === 'collecting' && this.activeTrial?.trialType === 'go' && this.activeTrial.releaseTimeMs === undefined && this.elapsedMs > 1350) {
-        this.invalidateActiveTrial('Release was too late');
+        this.trialState = 'animating';
       }
       if (this.trialState === 'animating' && this.renderer.isVisualComplete(this.currentRenderState())) {
         this.finishActiveTrial();
@@ -445,6 +445,7 @@ export class GameController {
   private feedbackFor(trial: TrialData): string {
     if (!trial.valid) return 'TRY AGAIN';
     if (trial.trialType === 'inhibition') return trial.inhibitionSuccess ? 'NICE!' : 'DID NOT NEED TO JUMP';
+    if (trial.releaseTimeMs === undefined) return 'NO JUMP';
     if (trial.signedErrorMs === undefined) return 'TRY AGAIN';
     const error = Math.abs(trial.signedErrorMs);
     if (error <= 20) return 'PERFECT TIMING';
@@ -456,6 +457,7 @@ export class GameController {
 
   private detailFor(trial: TrialData): string {
     if (!trial.valid) return trial.invalidReason ?? 'That trial was not counted.';
+    if (trial.trialType === 'go' && trial.releaseTimeMs === undefined) return 'No jump response.';
     if (trial.trialType === 'inhibition') {
       return trial.inhibitionSuccess
         ? 'You kept running.'

@@ -29,7 +29,14 @@ export function createSceneLayout(width: number, height: number): SceneLayout {
   };
 }
 
-export function drawTrack(ctx: CanvasRenderingContext2D, width: number, height: number, elapsedMs: number, layout: SceneLayout): void {
+export function drawTrack(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  elapsedMs: number,
+  layout: SceneLayout,
+  scrollX = 0
+): void {
   const skyBottom = height * 0.36;
   const stadiumBottom = height * 0.54;
   const grassBottom = layout.trackTopY;
@@ -62,6 +69,19 @@ export function drawTrack(ctx: CanvasRenderingContext2D, width: number, height: 
   ctx.fillStyle = '#cf5138';
   ctx.fillRect(0, layout.trackTopY, width, 16);
 
+  const trackStripeWidth = Math.max(42, width / 22);
+  const trackStripeOffset = scrollX % trackStripeWidth;
+  ctx.fillStyle = 'rgba(255, 224, 102, 0.12)';
+  for (let x = -trackStripeWidth - trackStripeOffset; x < width + trackStripeWidth; x += trackStripeWidth) {
+    ctx.beginPath();
+    ctx.moveTo(x, layout.trackTopY + 18);
+    ctx.lineTo(x + trackStripeWidth * 0.34, layout.trackTopY + 18);
+    ctx.lineTo(x + trackStripeWidth * 0.64, height);
+    ctx.lineTo(x + trackStripeWidth * 0.3, height);
+    ctx.closePath();
+    ctx.fill();
+  }
+
   ctx.strokeStyle = 'rgba(255,255,255,0.78)';
   ctx.lineWidth = 4;
   for (let lane = 0; lane < 4; lane += 1) {
@@ -75,11 +95,13 @@ export function drawTrack(ctx: CanvasRenderingContext2D, width: number, height: 
   ctx.strokeStyle = '#fff8d6';
   ctx.lineWidth = 5;
   ctx.setLineDash([18, 16]);
+  ctx.lineDashOffset = scrollX % 34;
   ctx.beginPath();
   ctx.moveTo(0, layout.groundY + 52);
   ctx.lineTo(width, layout.groundY + 52);
   ctx.stroke();
   ctx.setLineDash([]);
+  ctx.lineDashOffset = 0;
 }
 
 export function drawTakeoffMarker(ctx: CanvasRenderingContext2D, x: number, groundY: number): void {

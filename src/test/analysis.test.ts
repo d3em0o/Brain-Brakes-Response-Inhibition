@@ -58,6 +58,32 @@ describe('Game 1 timing calculations', () => {
     expect(summary.meanReleaseTimeMs).toBe(800);
     expect(summary.standardDeviationReleaseMs).toBe(82);
   });
+
+  it('counts no-response normal hurdles as incorrect without adding timing error', () => {
+    const noResponse = noJumpGoTrial();
+    expect(noResponse.jumped).toBe(false);
+    expect(noResponse.correct).toBe(false);
+    expect(noResponse.timingErrorMs).toBeNull();
+    expect(noResponse.absoluteErrorMs).toBeUndefined();
+
+    const summary = summarizeGame1([goTrial(800), goTrial(650), goTrial(950), noResponse], DEFAULT_CONFIG);
+    expect(summary.count).toBe(4);
+    expect(summary.jumpAttemptCount).toBe(3);
+    expect(summary.noResponseCount).toBe(1);
+    expect(summary.numberIn700to800Window).toBe(1);
+    expect(summary.percentageIn700to800Window).toBe(25);
+    expect(summary.meanAbsoluteErrorMs).toBe(100);
+  });
+
+  it('returns N/A-ready null timing values when there are no normal jump attempts', () => {
+    const summary = summarizeGame1([noJumpGoTrial(), noJumpGoTrial()], DEFAULT_CONFIG);
+    expect(summary.count).toBe(2);
+    expect(summary.jumpAttemptCount).toBe(0);
+    expect(summary.meanAbsoluteErrorMs).toBeNull();
+    expect(summary.meanReleaseTimeMs).toBeNull();
+    expect(summary.bestAbsoluteErrorMs).toBeNull();
+    expect(summary.percentageIn700to800Window).toBe(0);
+  });
 });
 
 describe('Game 2 inhibition calculations', () => {
@@ -92,6 +118,9 @@ describe('Game 2 inhibition calculations', () => {
   it('subtracts points for failed inhibition without awarding jump timing points', () => {
     const trial = stopTrial(800, 500);
     expect(trial.inhibitionSuccess).toBe(false);
+    expect(trial.jumped).toBe(true);
+    expect(trial.correct).toBe(false);
+    expect(trial.timingErrorMs).toBeNull();
     expect(trial.points).toBe(-50);
     expect(trial.absoluteErrorMs).toBeUndefined();
   });
@@ -145,6 +174,7 @@ describe('Game 2 inhibition calculations', () => {
   it('includes successful inhibition rewards and failed inhibition penalties in game score', () => {
     const summary = summarizeGame2([goTrial(800, 2), stopTrial(undefined, 500), stopTrial(800, 500)], DEFAULT_CONFIG, 800);
     expect(summary.score).toBe(150);
+    expect(summary.falseJumps).toBe(1);
   });
 
   it('calculates mean SSD and SSRT', () => {
@@ -158,6 +188,22 @@ describe('Game 2 inhibition calculations', () => {
     const invalid = { ...stopTrial(undefined, 500), valid: false };
     const summary = summarizeGame2([invalid], DEFAULT_CONFIG, 800);
     expect(summary.inhibitionTrials).toBe(0);
+  });
+
+  it('keeps falling hurdles out of normal jump timing and accuracy calculations', () => {
+    const summary = summarizeGame2(
+      [goTrial(800, 2), noJumpGoTrial(2), stopTrial(undefined, 550), stopTrial(700, 550)],
+      DEFAULT_CONFIG,
+      800
+    );
+    expect(summary.goSummary.count).toBe(2);
+    expect(summary.goSummary.jumpAttemptCount).toBe(1);
+    expect(summary.goSummary.meanAbsoluteErrorMs).toBe(0);
+    expect(summary.goSummary.percentageIn700to800Window).toBe(50);
+    expect(summary.inhibitionTrials).toBe(2);
+    expect(summary.inhibitionSuccesses).toBe(1);
+    expect(summary.inhibitionSuccessPercent).toBe(50);
+    expect(summary.falseJumps).toBe(1);
   });
 });
 
@@ -303,6 +349,30 @@ describe('personal Game 1 vs Game 2 jump comparison', () => {
     expect(comparison.differenceMs).toBe(30);
     expect(comparison.baselineCount).toBe(2);
     expect(comparison.fakeoutGoCount).toBe(2);
+    expect(comparison.baselineAccuracyPercent).toBe(50);
+    expect(comparison.fakeoutGoAccuracyPercent).toBe(50);
+    expect(comparison.accuracyDifferencePercentagePoints).toBe(0);
+  });
+
+  it('uses all normal hurdles for comparison accuracy but only jump attempts for timing error', () => {
+    const comparison = calculateGameComparison(
+      [goTrial(800, 1), noJumpGoTrial(1), goTrial(900, 2), noJumpGoTrial(2)],
+      DEFAULT_CONFIG
+    );
+
+    expect(comparison.baselineMeanAbsoluteErrorMs).toBe(0);
+    expect(comparison.fakeoutGoMeanAbsoluteErrorMs).toBe(100);
+    expect(comparison.baselineCount).toBe(2);
+    expect(comparison.fakeoutGoCount).toBe(2);
+    expect(comparison.baselineAccuracyPercent).toBe(50);
+    expect(comparison.fakeoutGoAccuracyPercent).toBe(0);
+    expect(comparison.accuracyDifferencePercentagePoints).toBe(-50);
+  });
+
+  it('reports null timing differences when a comparison group has no jump attempts', () => {
+    const comparison = calculateGameComparison([noJumpGoTrial(1), goTrial(800, 2)], DEFAULT_CONFIG);
+    expect(comparison.baselineMeanAbsoluteErrorMs).toBeNull();
+    expect(comparison.differenceMs).toBeNull();
   });
 });
 
@@ -314,6 +384,7 @@ describe('Game 2 results display', () => {
         inhibitionTrials: 3,
         inhibitionSuccesses: 2,
         inhibitionSuccessPercent: 67,
+        falseJumps: 1,
         meanSSDms: 550,
         estimatedSSRTms: 250,
         score: 150,
@@ -326,15 +397,49 @@ describe('Game 2 results display', () => {
         baselineOnTargetCount: 8,
         fakeoutOnTargetCount: 2,
         baselineCount: 10,
-        fakeoutGoCount: 7
+        fakeoutGoCount: 7,
+        baselineAccuracyPercent: 80,
+        fakeoutGoAccuracyPercent: 29,
+        accuracyDifferencePercentagePoints: -51
       }
     );
 
     expect(html).toContain('INHIBITION ACCURACY');
     expect(html).toContain('<strong>67%</strong>');
-    expect(html).toContain('FALLING HURDLES');
-    expect(html).toContain('<strong>2 / 3</strong>');
-    expect(html).toContain('2 / 7 normal jumps on target');
+    expect(html).toContain('2 / 3 falling hurdles correctly ignored');
+    expect(html).toContain('NORMAL JUMP ACCURACY');
+    expect(html).toContain('FALSE JUMPS');
+    expect(html).toContain('-51 percentage points accuracy');
+  });
+
+  it('displays N/A instead of 0 ms when a timing group has no jump attempts', () => {
+    const html = renderGame2Results(
+      {
+        goSummary: summarizeGame1([noJumpGoTrial(2)], DEFAULT_CONFIG),
+        inhibitionTrials: 1,
+        inhibitionSuccesses: 1,
+        inhibitionSuccessPercent: 100,
+        falseJumps: 0,
+        meanSSDms: 550,
+        estimatedSSRTms: 250,
+        score: 100,
+        warnings: []
+      },
+      {
+        baselineMeanAbsoluteErrorMs: null,
+        fakeoutGoMeanAbsoluteErrorMs: null,
+        differenceMs: null,
+        baselineOnTargetCount: 0,
+        fakeoutOnTargetCount: 0,
+        baselineCount: 2,
+        fakeoutGoCount: 1,
+        baselineAccuracyPercent: 0,
+        fakeoutGoAccuracyPercent: 0,
+        accuracyDifferencePercentagePoints: 0
+      }
+    );
+
+    expect(html).toContain('<strong>N/A</strong>');
   });
 });
 
@@ -348,6 +453,27 @@ function goTrial(releaseTimeMs: number, game: 1 | 2 = 1): TrialData {
       trialStartTimestamp: 0,
       releaseTimestamp: releaseTimeMs,
       releaseTimeMs,
+      scheduledSSDms: null,
+      actualCuePresentationTime: null,
+      collapseTriggered: false,
+      hurdleState: 'upright',
+      valid: true,
+      inputMethod: 'keyboard',
+      targetTimeMs: DEFAULT_CONFIG.targetTimeMs,
+      points: 0
+    },
+    DEFAULT_CONFIG
+  );
+}
+
+function noJumpGoTrial(game: 1 | 2 = 1): TrialData {
+  return completeGoTrial(
+    {
+      trialIndex: 1,
+      game,
+      trialType: 'go',
+      practice: false,
+      trialStartTimestamp: 0,
       scheduledSSDms: null,
       actualCuePresentationTime: null,
       collapseTriggered: false,

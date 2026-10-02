@@ -23,7 +23,15 @@ export function categorizeGoTrial(signedErrorMs?: number): string {
 
 export function completeGoTrial(trial: TrialData, config: GameConfig): TrialData {
   if (trial.releaseTimeMs === undefined) {
-    return { ...trial, valid: false, points: 0 };
+    return {
+      ...trial,
+      targetTimeMs: config.targetTimeMs,
+      jumped: false,
+      correct: false,
+      timingErrorMs: null,
+      withinResearchSuccessWindow: false,
+      points: 0
+    };
   }
 
   const signedErrorMs = trial.releaseTimeMs - config.targetTimeMs;
@@ -36,34 +44,39 @@ export function completeGoTrial(trial: TrialData, config: GameConfig): TrialData
     targetTimeMs: config.targetTimeMs,
     signedErrorMs,
     absoluteErrorMs,
+    timingErrorMs: absoluteErrorMs,
+    jumped: true,
+    correct: withinResearchSuccessWindow,
     withinResearchSuccessWindow,
     points: scoreGoTrial(absoluteErrorMs)
   };
 }
 
 export function summarizeGame1(trials: TrialData[], config: GameConfig): Game1Summary {
-  const validTrials = trials.filter(
-    (trial) => trial.valid && !trial.practice && trial.trialType === 'go' && trial.releaseTimeMs !== undefined
-  );
-  const releaseTimes = validTrials.map((trial) => trial.releaseTimeMs as number);
-  const signedErrors = validTrials.map((trial) => trial.signedErrorMs ?? (trial.releaseTimeMs as number) - config.targetTimeMs);
+  const normalTrials = trials.filter((trial) => trial.valid && !trial.practice && trial.trialType === 'go');
+  const jumpAttempts = normalTrials.filter((trial) => trial.releaseTimeMs !== undefined);
+  const releaseTimes = jumpAttempts.map((trial) => trial.releaseTimeMs as number);
+  const signedErrors = jumpAttempts.map((trial) => trial.signedErrorMs ?? (trial.releaseTimeMs as number) - config.targetTimeMs);
   const absoluteErrors = signedErrors.map(Math.abs);
-  const inWindow = validTrials.filter((trial) => trial.withinResearchSuccessWindow).length;
-  const count = validTrials.length;
+  const inWindow = normalTrials.filter((trial) => trial.withinResearchSuccessWindow).length;
+  const count = normalTrials.length;
+  const jumpAttemptCount = jumpAttempts.length;
 
   return {
     count,
-    meanReleaseTimeMs: roundMs(mean(releaseTimes)),
-    medianReleaseTimeMs: roundMs(median(releaseTimes)),
-    meanSignedErrorMs: roundMs(mean(signedErrors)),
-    meanAbsoluteErrorMs: roundMs(mean(absoluteErrors)),
-    medianAbsoluteErrorMs: roundMs(median(absoluteErrors)),
-    standardDeviationReleaseMs: roundMs(standardDeviation(releaseTimes)),
-    bestAbsoluteErrorMs: count ? roundMs(Math.min(...absoluteErrors)) : 0,
+    jumpAttemptCount,
+    noResponseCount: count - jumpAttemptCount,
+    meanReleaseTimeMs: jumpAttemptCount ? roundMs(mean(releaseTimes)) : null,
+    medianReleaseTimeMs: jumpAttemptCount ? roundMs(median(releaseTimes)) : null,
+    meanSignedErrorMs: jumpAttemptCount ? roundMs(mean(signedErrors)) : null,
+    meanAbsoluteErrorMs: jumpAttemptCount ? roundMs(mean(absoluteErrors)) : null,
+    medianAbsoluteErrorMs: jumpAttemptCount ? roundMs(median(absoluteErrors)) : null,
+    standardDeviationReleaseMs: jumpAttemptCount ? roundMs(standardDeviation(releaseTimes)) : null,
+    bestAbsoluteErrorMs: jumpAttemptCount ? roundMs(Math.min(...absoluteErrors)) : null,
     numberIn700to800Window: inWindow,
     percentageIn700to800Window: count ? roundMs((inWindow / count) * 100) : 0,
     numberEarly: signedErrors.filter((error) => error < 0).length,
     numberLate: signedErrors.filter((error) => error > 0).length,
-    score: validTrials.reduce((sum, trial) => sum + trial.points, 0)
+    score: normalTrials.reduce((sum, trial) => sum + trial.points, 0)
   };
 }

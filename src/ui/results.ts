@@ -3,7 +3,7 @@ import type { GameComparisonSummary } from '../analysis/gameComparison';
 
 export function timingLine(trials: TrialData[], targetTimeMs: number): string {
   const markers = trials
-    .filter((trial) => trial.valid && !trial.practice && trial.releaseTimeMs !== undefined)
+    .filter((trial) => trial.valid && !trial.practice && trial.trialType === 'go' && trial.releaseTimeMs !== undefined)
     .map((trial) => {
       const left = Math.max(0, Math.min(100, ((trial.releaseTimeMs as number) - 500) / 600 * 100));
       return `<span class="timing-dot" style="left:${left}%"></span>`;
@@ -24,44 +24,49 @@ export function renderGame1Results(summary: Game1Summary, trials: TrialData[], t
     <section class="result-grid">
       <article class="stat-primary">
         <span>YOUR JUMP TIMING</span>
-        <strong>${summary.meanAbsoluteErrorMs} ms</strong>
-        <small>average timing error</small>
+        <strong>${formatMs(summary.meanAbsoluteErrorMs)}</strong>
+        <small>average timing error from ${summary.jumpAttemptCount} jump attempts</small>
       </article>
-      <article><span>BEST JUMP</span><strong>${summary.bestAbsoluteErrorMs} ms</strong><small>away</small></article>
-      <article><span>CONSISTENCY</span><strong>+/-${summary.standardDeviationReleaseMs} ms</strong><small>release spread</small></article>
-      <article><span>ON-TARGET JUMPS</span><strong>${summary.numberIn700to800Window} / ${summary.count}</strong><small>700-800 ms</small></article>
+      <article><span>BEST JUMP</span><strong>${formatMs(summary.bestAbsoluteErrorMs)}</strong><small>away</small></article>
+      <article><span>CONSISTENCY</span><strong>${summary.standardDeviationReleaseMs === null ? 'N/A' : `+/-${summary.standardDeviationReleaseMs} ms`}</strong><small>release spread</small></article>
+      <article><span>NORMAL JUMP ACCURACY</span><strong>${summary.percentageIn700to800Window}%</strong><small>${summary.numberIn700to800Window} / ${summary.count} normal hurdles on target</small></article>
     </section>
     ${timingLine(trials, targetTimeMs)}
   `;
 }
 
 export function renderGame2Results(summary: Game2Summary, comparison: GameComparisonSummary): string {
-  const difference = comparison.differenceMs;
-  const differenceLabel =
-    Math.abs(difference) <= 5
-      ? 'about the same'
-      : difference > 0
-        ? `${difference} ms less accurate`
-        : `${Math.abs(difference)} ms more accurate`;
-
   return `
     <section class="result-grid">
       <article class="stat-primary">
         <span>INHIBITION ACCURACY</span>
         <strong>${summary.inhibitionSuccessPercent}%</strong>
-        <small>falling hurdles stopped</small>
+        <small>${summary.inhibitionSuccesses} / ${summary.inhibitionTrials} falling hurdles correctly ignored</small>
       </article>
-      <article><span>FALLING HURDLES</span><strong>${summary.inhibitionSuccesses} / ${summary.inhibitionTrials}</strong><small>correctly kept running</small></article>
-      <article><span>NORMAL JUMPS</span><strong>${summary.goSummary.meanAbsoluteErrorMs} ms</strong><small>average timing error</small></article>
+      <article><span>NORMAL JUMP ACCURACY</span><strong>${summary.goSummary.percentageIn700to800Window}%</strong><small>${summary.goSummary.numberIn700to800Window} / ${summary.goSummary.count} normal hurdles on target</small></article>
+      <article><span>FALSE JUMPS</span><strong>${summary.falseJumps}</strong><small>jumped when the hurdle fell</small></article>
       <article><span>GAME SCORE</span><strong>${summary.score}</strong><small>points</small></article>
     </section>
     <section class="comparison-panel">
-      <h2>COMPARE YOUR JUMP TIMING</h2>
+      <h2>COMPARE YOUR PERFORMANCE</h2>
       <div class="comparison-stats">
-        <article><span>BEFORE FAKE-OUTS</span><strong>${comparison.baselineMeanAbsoluteErrorMs} ms</strong><small>${comparison.baselineOnTargetCount} / ${comparison.baselineCount} normal jumps on target</small></article>
-        <article><span>DURING FAKE-OUTS</span><strong>${comparison.fakeoutGoMeanAbsoluteErrorMs} ms</strong><small>${comparison.fakeoutOnTargetCount} / ${comparison.fakeoutGoCount} normal jumps on target</small></article>
-        <article><span>DIFFERENCE</span><strong>${difference >= 0 ? '+' : ''}${difference} ms</strong><small>${differenceLabel}</small></article>
+        <article><span>BEFORE FAKE-OUTS</span><strong>${formatMs(comparison.baselineMeanAbsoluteErrorMs)}</strong><small>${comparison.baselineAccuracyPercent}% on target - ${comparison.baselineOnTargetCount} / ${comparison.baselineCount} normal hurdles</small></article>
+        <article><span>DURING FAKE-OUTS</span><strong>${formatMs(comparison.fakeoutGoMeanAbsoluteErrorMs)}</strong><small>${comparison.fakeoutGoAccuracyPercent}% on target - ${comparison.fakeoutOnTargetCount} / ${comparison.fakeoutGoCount} normal hurdles</small></article>
+        <article><span>CHANGE WITH FAKE-OUTS</span><strong>${formatSignedMs(comparison.differenceMs)}</strong><small>${formatSignedPercentagePoints(comparison.accuracyDifferencePercentagePoints)} accuracy</small></article>
       </div>
     </section>
   `;
+}
+
+function formatMs(value: number | null): string {
+  return value === null ? 'N/A' : `${value} ms`;
+}
+
+function formatSignedMs(value: number | null): string {
+  if (value === null) return 'N/A';
+  return `${value >= 0 ? '+' : ''}${value} ms`;
+}
+
+function formatSignedPercentagePoints(value: number): string {
+  return `${value >= 0 ? '+' : ''}${value} percentage points`;
 }

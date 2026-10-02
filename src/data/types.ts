@@ -33,6 +33,9 @@ export interface TrialData extends TrialRuntime {
   targetTimeMs: number;
   signedErrorMs?: number;
   absoluteErrorMs?: number;
+  timingErrorMs?: number | null;
+  jumped?: boolean;
+  correct?: boolean;
   withinResearchSuccessWindow?: boolean;
   inhibitionSuccess?: boolean;
   releasedBeforeCue?: boolean;
@@ -42,13 +45,15 @@ export interface TrialData extends TrialRuntime {
 
 export interface Game1Summary {
   count: number;
-  meanReleaseTimeMs: number;
-  medianReleaseTimeMs: number;
-  meanSignedErrorMs: number;
-  meanAbsoluteErrorMs: number;
-  medianAbsoluteErrorMs: number;
-  standardDeviationReleaseMs: number;
-  bestAbsoluteErrorMs: number;
+  jumpAttemptCount: number;
+  noResponseCount: number;
+  meanReleaseTimeMs: number | null;
+  medianReleaseTimeMs: number | null;
+  meanSignedErrorMs: number | null;
+  meanAbsoluteErrorMs: number | null;
+  medianAbsoluteErrorMs: number | null;
+  standardDeviationReleaseMs: number | null;
+  bestAbsoluteErrorMs: number | null;
   numberIn700to800Window: number;
   percentageIn700to800Window: number;
   numberEarly: number;
@@ -61,6 +66,7 @@ export interface Game2Summary {
   inhibitionTrials: number;
   inhibitionSuccesses: number;
   inhibitionSuccessPercent: number;
+  falseJumps: number;
   meanSSDms: number;
   estimatedSSRTms: number;
   score: number;

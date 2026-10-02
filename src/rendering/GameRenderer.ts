@@ -1,7 +1,7 @@
 import type { AthleteState, HurdleState } from '../data/types';
 import type { GameConfig } from '../data/config';
 import { drawHurdle } from './Hurdle';
-import { drawRunner } from './Runner';
+import { drawRunner, preloadRunnerSprites } from './Runner';
 import { createSceneLayout, drawTakeoffMarker, drawTrack, type SceneLayout } from './Track';
 
 export interface RenderState {
@@ -21,11 +21,28 @@ export interface RenderState {
 interface RunnerVisual {
   x: number;
   y: number;
+  worldX: number;
   state: AthleteState;
   jumpProgress?: number;
 }
 
 const JUMP_DURATION_MS = 560;
+const GAME_SPEED = 1;
+const RUNNER_SCREEN_X_RATIO = 0.24;
+
+interface SceneVisuals {
+  takeoffX: number;
+  hurdleX: number;
+  finishX: number;
+  scrollX: number;
+}
+
+interface SceneDebugMetrics {
+  takeoffX: number;
+  hurdleX: number;
+  distancePx: number;
+  distanceAsPercentOfWidth: number;
+}
 
 export class GameRenderer {
   private canvas: HTMLCanvasElement;
@@ -33,6 +50,12 @@ export class GameRenderer {
   private config: GameConfig;
   private cssWidth = 1280;
   private cssHeight = 720;
+  private sceneDebugMetrics: SceneDebugMetrics = {
+    takeoffX: 0,
+    hurdleX: 0,
+    distancePx: 0,
+    distanceAsPercentOfWidth: 0
+  };
 
   constructor(canvas: HTMLCanvasElement, config: GameConfig) {
     this.canvas = canvas;
@@ -40,6 +63,7 @@ export class GameRenderer {
     if (!context) throw new Error('Canvas rendering is unavailable.');
     this.ctx = context;
     this.config = config;
+    preloadRunnerSprites();
     this.resize();
   }
 
@@ -59,16 +83,18 @@ export class GameRenderer {
     const height = this.cssHeight;
     ctx.clearRect(0, 0, width, height);
     const layout = createSceneLayout(width, height);
-    drawTrack(ctx, width, height, state.elapsedMs, layout);
 
     const visual = this.getRunnerVisual(state, layout);
+    const scene = this.getSceneVisuals(layout, visual);
     const collapseProgress = state.trialType === 'inhibition' ? state.collapseProgress ?? 0 : 0;
 
-    drawTakeoffMarker(ctx, layout.takeoffX, layout.groundY);
-    drawHurdle(ctx, layout.hurdleX, layout.groundY, collapseProgress, state.elapsedMs);
-    drawRunner(ctx, visual.x, visual.y, visual.state, state.elapsedMs);
-    this.drawFinishMarker(layout.finishX, layout.groundY);
+    drawTrack(ctx, width, height, state.elapsedMs, layout, scene.scrollX);
+    drawTakeoffMarker(ctx, scene.takeoffX, layout.groundY);
+    drawHurdle(ctx, scene.hurdleX, layout.groundY, collapseProgress, state.elapsedMs);
+    drawRunner(ctx, visual.x, visual.y, visual.state, state.elapsedMs, visual.jumpProgress);
+    this.drawFinishMarker(scene.finishX, layout.groundY);
     this.drawOverlayText(state);
+    this.updateSceneDebugMetrics(scene, visual);
   }
 
   renderMenu(title = 'BRAIN BRAKES', subtitle = 'How fast can your brain change its mind?'): void {
@@ -78,32 +104,27 @@ export class GameRenderer {
   isVisualComplete(state: RenderState): boolean {
     const layout = createSceneLayout(this.cssWidth, this.cssHeight);
     const visual = this.getRunnerVisual(state, layout);
-    return visual.x >= layout.finishX + 12;
+    return visual.worldX >= layout.finishX + 12;
   }
 
   getSceneDebugMetrics(): { takeoffX: number; hurdleX: number; distancePx: number; distanceAsPercentOfWidth: number } {
-    const layout = createSceneLayout(this.cssWidth, this.cssHeight);
-    const distancePx = layout.hurdleX - layout.takeoffX;
-    return {
-      takeoffX: layout.takeoffX,
-      hurdleX: layout.hurdleX,
-      distancePx,
-      distanceAsPercentOfWidth: this.cssWidth ? (distancePx / this.cssWidth) * 100 : 0
-    };
+    return this.sceneDebugMetrics;
   }
 
   private getRunnerVisual(state: RenderState, layout: SceneLayout): RunnerVisual {
-    const runSpeed = (layout.takeoffX - layout.startX) / this.config.targetTimeMs;
-    const baseGroundX = Math.min(
+    const runSpeed = this.getRunSpeed(layout);
+    const runnerScreenX = this.getRunnerScreenX(layout);
+    const baseGroundWorldX = Math.min(
       layout.finishX + 18,
       layout.startX + runSpeed * Math.max(0, state.elapsedMs)
     );
 
     if (state.releaseTimeMs === undefined) {
-      const noJumpState = baseGroundX >= layout.finishX ? 'finish' : state.athleteState;
+      const noJumpState = baseGroundWorldX >= layout.finishX ? 'finish' : state.athleteState;
       return {
-        x: baseGroundX,
+        x: runnerScreenX,
         y: layout.groundY,
+        worldX: baseGroundWorldX,
         state: noJumpState
       };
     }
@@ -118,8 +139,9 @@ export class GameRenderer {
     if (jumpProgress < 1) {
       const arc = 4 * jumpProgress * (1 - jumpProgress);
       return {
-        x: jumpStartX + jumpDistance * jumpProgress,
+        x: runnerScreenX,
         y: layout.groundY - jumpHeight * arc,
+        worldX: jumpStartX + jumpDistance * jumpProgress,
         state: jumpProgress < 0.25 ? 'jump_takeoff' : jumpProgress < 0.72 ? 'airborne' : 'landing',
         jumpProgress
       };
@@ -127,11 +149,41 @@ export class GameRenderer {
 
     const landingX = jumpStartX + jumpDistance;
     const runOutElapsed = jumpElapsed - JUMP_DURATION_MS;
+    const runOutWorldX = Math.min(layout.finishX + 18, landingX + runSpeed * runOutElapsed);
     return {
-      x: Math.min(layout.finishX + 18, landingX + runSpeed * runOutElapsed),
+      x: runnerScreenX,
       y: layout.groundY,
-      state: landingX + runSpeed * runOutElapsed >= layout.finishX ? 'finish' : 'continue_running',
+      worldX: runOutWorldX,
+      state: runOutWorldX >= layout.finishX ? 'finish' : 'continue_running',
       jumpProgress
+    };
+  }
+
+  private getRunSpeed(layout: SceneLayout): number {
+    return ((layout.takeoffX - layout.startX) / this.config.targetTimeMs) * GAME_SPEED;
+  }
+
+  private getRunnerScreenX(layout: SceneLayout): number {
+    return this.cssWidth * RUNNER_SCREEN_X_RATIO || layout.startX;
+  }
+
+  private getSceneVisuals(layout: SceneLayout, visual: RunnerVisual): SceneVisuals {
+    const screenXForWorldX = (worldX: number) => visual.x + (worldX - visual.worldX);
+    return {
+      takeoffX: screenXForWorldX(layout.takeoffX),
+      hurdleX: screenXForWorldX(layout.hurdleX),
+      finishX: screenXForWorldX(layout.finishX),
+      scrollX: Math.max(0, visual.worldX - layout.startX)
+    };
+  }
+
+  private updateSceneDebugMetrics(scene: SceneVisuals, visual: RunnerVisual): void {
+    const distancePx = scene.hurdleX - visual.x;
+    this.sceneDebugMetrics = {
+      takeoffX: scene.takeoffX,
+      hurdleX: scene.hurdleX,
+      distancePx,
+      distanceAsPercentOfWidth: this.cssWidth ? (distancePx / this.cssWidth) * 100 : 0
     };
   }
 

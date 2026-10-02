@@ -20,6 +20,9 @@ export function completeInhibitionTrial(trial: TrialData, config: GameConfig, cu
 
   return {
     ...trial,
+    jumped: releaseTime !== undefined,
+    correct: inhibitionSuccess,
+    timingErrorMs: null,
     releasedBeforeCue,
     inhibitionSuccess,
     ssdAfterTrialMs: next,
@@ -27,13 +30,14 @@ export function completeInhibitionTrial(trial: TrialData, config: GameConfig, cu
   };
 }
 
-export function summarizeGame2(trials: TrialData[], config: GameConfig, game1MeanReleaseMs?: number): Game2Summary {
+export function summarizeGame2(trials: TrialData[], config: GameConfig, game1MeanReleaseMs?: number | null): Game2Summary {
   const scored = trials.filter((trial) => trial.valid && !trial.practice && trial.game === 2);
   const goSummary = summarizeGame1(scored, config);
   const inhibition = scored.filter((trial) => trial.trialType === 'inhibition');
   const successes = inhibition.filter((trial) => trial.inhibitionSuccess).length;
+  const falseJumps = inhibition.filter((trial) => trial.releaseTimeMs !== undefined).length;
   const meanSSDms = roundMs(mean(inhibition.map((trial) => trial.scheduledSSDms ?? 0).filter(Boolean)));
-  const meanGo = goSummary.meanReleaseTimeMs || game1MeanReleaseMs || config.targetTimeMs;
+  const meanGo = goSummary.meanReleaseTimeMs ?? game1MeanReleaseMs ?? config.targetTimeMs;
   const estimatedSSRTms = roundMs(estimateSSRT(meanGo, meanSSDms));
   const successPercent = inhibition.length ? roundMs((successes / inhibition.length) * 100) : 0;
   const warnings: string[] = [];
@@ -44,7 +48,7 @@ export function summarizeGame2(trials: TrialData[], config: GameConfig, game1Mea
   if (inhibition.length && (successPercent < 25 || successPercent > 75)) {
     warnings.push('The challenge may not have settled at the ideal difficulty, so treat this estimate cautiously.');
   }
-  if (game1MeanReleaseMs && goSummary.meanReleaseTimeMs - game1MeanReleaseMs > 120) {
+  if (game1MeanReleaseMs !== null && game1MeanReleaseMs !== undefined && goSummary.meanReleaseTimeMs !== null && goSummary.meanReleaseTimeMs - game1MeanReleaseMs > 120) {
     warnings.push('Looks like you may have started waiting for the hurdle to fall. Try jumping normally unless it actually falls.');
   }
 
@@ -53,6 +57,7 @@ export function summarizeGame2(trials: TrialData[], config: GameConfig, game1Mea
     inhibitionTrials: inhibition.length,
     inhibitionSuccesses: successes,
     inhibitionSuccessPercent: successPercent,
+    falseJumps,
     meanSSDms,
     estimatedSSRTms,
     score: scored.reduce((sum, trial) => sum + trial.points, 0),
