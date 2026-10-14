@@ -73,8 +73,8 @@ export function summarizeGame1(trials: TrialData[], config: GameConfig): Game1Su
     medianAbsoluteErrorMs: jumpAttemptCount ? roundMs(median(absoluteErrors)) : null,
     standardDeviationReleaseMs: jumpAttemptCount > 1 ? roundMs(standardDeviation(releaseTimes)) : null,
     bestAbsoluteErrorMs: jumpAttemptCount ? roundMs(Math.min(...absoluteErrors)) : null,
-    numberIn700to800Window: inWindow,
-    percentageIn700to800Window: count ? roundMs((inWindow / count) * 100) : 0,
+    numberInTargetWindow: inWindow,
+    percentageInTargetWindow: count ? roundMs((inWindow / count) * 100) : 0,
     numberEarly: signedErrors.filter((error) => error < 0).length,
     numberLate: signedErrors.filter((error) => error > 0).length,
     score: normalTrials.reduce((sum, trial) => sum + trial.points, 0)

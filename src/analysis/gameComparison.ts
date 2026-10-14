@@ -36,13 +36,13 @@ export function calculateGameComparison(trials: TrialData[], config: GameConfig)
       baselineSummary.meanAbsoluteErrorMs === null || fakeoutSummary.meanAbsoluteErrorMs === null
         ? null
         : fakeoutSummary.meanAbsoluteErrorMs - baselineSummary.meanAbsoluteErrorMs,
-    baselineOnTargetCount: baselineSummary.numberIn700to800Window,
-    fakeoutOnTargetCount: fakeoutSummary.numberIn700to800Window,
+    baselineOnTargetCount: baselineSummary.numberInTargetWindow,
+    fakeoutOnTargetCount: fakeoutSummary.numberInTargetWindow,
     baselineCount: baselineSummary.count,
     fakeoutGoCount: fakeoutSummary.count,
-    baselineAccuracyPercent: baselineSummary.percentageIn700to800Window,
-    fakeoutGoAccuracyPercent: fakeoutSummary.percentageIn700to800Window,
+    baselineAccuracyPercent: baselineSummary.percentageInTargetWindow,
+    fakeoutGoAccuracyPercent: fakeoutSummary.percentageInTargetWindow,
     accuracyDifferencePercentagePoints:
-      fakeoutSummary.percentageIn700to800Window - baselineSummary.percentageIn700to800Window
+      fakeoutSummary.percentageInTargetWindow - baselineSummary.percentageInTargetWindow
   };
 }

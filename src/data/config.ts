@@ -21,8 +21,8 @@ export interface GameConfig {
 export const DEFAULT_CONFIG: GameConfig = {
   targetTimeMs: 800,
   totalTrialTimeMs: 1000,
-  goodWindowStartMs: 700,
-  goodWindowEndMs: 800,
+  goodWindowStartMs: 770,
+  goodWindowEndMs: 830,
   game1PracticeTrials: 5,
   game1ScoredTrials: 10,
   game2PracticeTrials: 5,

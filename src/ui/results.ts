@@ -59,7 +59,7 @@ export function renderGame1Results(summary: Game1Summary, trials: TrialData[], c
       </article>
       <article><span>BEST JUMP</span><strong>${formatMsOff(summary.bestAbsoluteErrorMs)}</strong><small>Your closest jump!</small></article>
       <article><span>STEADINESS</span><strong>${formatMs(summary.standardDeviationReleaseMs)}</strong><small>How similar your jump timings were</small></article>
-      <article><span>ON TARGET</span><strong>${summary.percentageIn700to800Window}%</strong><small>${formatOutOf(summary.numberIn700to800Window, summary.count)} jumps in the target zone!</small></article>
+      <article><span>ON TARGET</span><strong>${summary.percentageInTargetWindow}%</strong><small>${formatOutOf(summary.numberInTargetWindow, summary.count)} jumps in the target zone!</small></article>
     </section>
     ${timingLine(trials, config)}
   `;
@@ -73,8 +73,8 @@ export function renderGame2Results(summary: Game2Summary, comparison: GameCompar
         <strong>${summary.inhibitionSuccessPercent}%</strong>
         <small>You stopped for ${formatOutOf(summary.inhibitionSuccesses, summary.inhibitionTrials)} falling hurdles!</small>
       </article>
-      <article><span>JUMP ACCURACY</span><strong>${summary.goSummary.percentageIn700to800Window}%</strong><small>${formatOutOf(summary.goSummary.numberIn700to800Window, summary.goSummary.count)} normal jumps on target!</small></article>
-      <article><span>JUMP STEADINESS</span><strong>${formatMs(summary.goSummary.standardDeviationReleaseMs)}</strong><small>How steady your jump timing was</small></article>
+      <article><span>JUMP ACCURACY</span><strong>${summary.goSummary.percentageInTargetWindow}%</strong><small>${formatOutOf(summary.goSummary.numberInTargetWindow, summary.goSummary.count)} normal jumps on target!</small></article>
+      <article><span>STEADINESS</span><strong>${formatMs(summary.goSummary.standardDeviationReleaseMs)}</strong><small>How steady your jump timing was</small></article>
       <article><span>GAME SCORE</span><strong class="stat-value-compact">${summary.score} points</strong><small>Your total points!</small></article>
     </section>
     <section class="comparison-panel">

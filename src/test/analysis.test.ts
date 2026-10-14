@@ -75,8 +75,8 @@ describe('Game 1 timing calculations', () => {
     expect(summary.count).toBe(4);
     expect(summary.jumpAttemptCount).toBe(3);
     expect(summary.noResponseCount).toBe(1);
-    expect(summary.numberIn700to800Window).toBe(1);
-    expect(summary.percentageIn700to800Window).toBe(25);
+    expect(summary.numberInTargetWindow).toBe(1);
+    expect(summary.percentageInTargetWindow).toBe(25);
     expect(summary.meanAbsoluteErrorMs).toBe(100);
   });
 
@@ -87,7 +87,7 @@ describe('Game 1 timing calculations', () => {
     expect(summary.meanAbsoluteErrorMs).toBeNull();
     expect(summary.meanReleaseTimeMs).toBeNull();
     expect(summary.bestAbsoluteErrorMs).toBeNull();
-    expect(summary.percentageIn700to800Window).toBe(0);
+    expect(summary.percentageInTargetWindow).toBe(0);
   });
 });
 
@@ -96,6 +96,16 @@ describe('Game 2 inhibition calculations', () => {
     const trial = goTrial(775, 2);
     expect(trial.signedErrorMs).toBe(-25);
     expect(trial.withinResearchSuccessWindow).toBe(true);
+  });
+
+  it('uses a centered 770-830 ms target zone around the 800 ms ideal jump', () => {
+    expect(DEFAULT_CONFIG.targetTimeMs).toBe(800);
+    expect(DEFAULT_CONFIG.goodWindowStartMs).toBe(770);
+    expect(DEFAULT_CONFIG.goodWindowEndMs).toBe(830);
+    expect(goTrial(770).withinResearchSuccessWindow).toBe(true);
+    expect(goTrial(830).withinResearchSuccessWindow).toBe(true);
+    expect(goTrial(760).withinResearchSuccessWindow).toBe(false);
+    expect(goTrial(840).withinResearchSuccessWindow).toBe(false);
   });
 
   it('records scheduled and actual cue timing', () => {
@@ -219,7 +229,7 @@ describe('Game 2 inhibition calculations', () => {
     expect(summary.goSummary.count).toBe(2);
     expect(summary.goSummary.jumpAttemptCount).toBe(1);
     expect(summary.goSummary.meanAbsoluteErrorMs).toBe(0);
-    expect(summary.goSummary.percentageIn700to800Window).toBe(50);
+    expect(summary.goSummary.percentageInTargetWindow).toBe(50);
     expect(summary.inhibitionTrials).toBe(2);
     expect(summary.inhibitionSuccesses).toBe(1);
     expect(summary.inhibitionSuccessPercent).toBe(50);
@@ -369,12 +379,12 @@ describe('personal Game 1 vs Game 2 jump comparison', () => {
     expect(comparison.differenceMs).toBe(30);
     expect(comparison.baselineCount).toBe(2);
     expect(comparison.fakeoutGoCount).toBe(2);
-    expect(comparison.baselineAccuracyPercent).toBe(50);
-    expect(comparison.fakeoutGoAccuracyPercent).toBe(50);
-    expect(comparison.accuracyDifferencePercentagePoints).toBe(0);
+    expect(comparison.baselineAccuracyPercent).toBe(100);
+    expect(comparison.fakeoutGoAccuracyPercent).toBe(0);
+    expect(comparison.accuracyDifferencePercentagePoints).toBe(-100);
     expect(comparison.targetTimeMs).toBe(800);
-    expect(comparison.windowStartMs).toBe(700);
-    expect(comparison.windowEndMs).toBe(800);
+    expect(comparison.windowStartMs).toBe(770);
+    expect(comparison.windowEndMs).toBe(830);
   });
 
   it('uses all normal hurdles for comparison accuracy but only jump attempts for timing error', () => {
@@ -416,8 +426,8 @@ describe('Game 2 results display', () => {
       },
       {
         targetTimeMs: 800,
-        windowStartMs: 700,
-        windowEndMs: 800,
+        windowStartMs: 770,
+        windowEndMs: 830,
         baselineMeanAbsoluteErrorMs: 20,
         fakeoutGoMeanAbsoluteErrorMs: 40,
         differenceMs: 20,
@@ -435,8 +445,8 @@ describe('Game 2 results display', () => {
     expect(html).toContain('<strong>67%</strong>');
     expect(html).toContain('You stopped for 2 out of 3 falling hurdles!');
     expect(html).toContain('JUMP ACCURACY');
-    expect(html).toContain('2 out of 2 normal jumps on target!');
-    expect(html).toContain('JUMP STEADINESS');
+    expect(html).toContain('1 out of 2 normal jumps on target!');
+    expect(html).toContain('STEADINESS');
     expect(html).toContain('GAME SCORE');
     expect(html).toContain('NORMAL ROUND');
     expect(html).toContain('TRICK ROUND');
@@ -460,8 +470,8 @@ describe('Game 2 results display', () => {
       },
       {
         targetTimeMs: 800,
-        windowStartMs: 700,
-        windowEndMs: 800,
+        windowStartMs: 770,
+        windowEndMs: 830,
         baselineMeanAbsoluteErrorMs: null,
         fakeoutGoMeanAbsoluteErrorMs: null,
         differenceMs: null,
@@ -496,7 +506,7 @@ describe('Game 2 results display', () => {
     expect(html).toContain('0 ms off');
     expect(html).toContain('STEADINESS');
     expect(html).toContain('ON TARGET');
-    expect(html).toContain('2 out of 3 jumps in the target zone!');
+    expect(html).toContain('1 out of 3 jumps in the target zone!');
   });
 });
 

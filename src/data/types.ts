@@ -54,8 +54,8 @@ export interface Game1Summary {
   medianAbsoluteErrorMs: number | null;
   standardDeviationReleaseMs: number | null;
   bestAbsoluteErrorMs: number | null;
-  numberIn700to800Window: number;
-  percentageIn700to800Window: number;
+  numberInTargetWindow: number;
+  percentageInTargetWindow: number;
   numberEarly: number;
   numberLate: number;
   score: number;

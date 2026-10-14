@@ -132,6 +132,29 @@ input {
   font-weight: 700;
 }
 
+.score-tips {
+  margin: 18px 0;
+  padding: 14px 16px;
+  border: 3px solid #24334c;
+  border-radius: 8px;
+  background: #d8f2ff;
+  font-weight: 850;
+}
+
+.score-tips strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.score-tips ul {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.score-tips li + li {
+  margin-top: 4px;
+}
+
 .spacebar-visual {
   width: min(360px, 100%);
   margin: 18px 0 0;
