@@ -106,7 +106,7 @@ export class GameController {
     this.showScreen(
       screenShell(
         'GET READY',
-        `<p>You are the hurdler. Hold the space bar to run, then release it to jump.</p><div class="score-tips"><strong>HOW SCORING WORKS</strong><ul><li>Almost perfect jump (0-10 ms away): +100 points</li><li>Close jump (11-20 ms away): +75 points</li><li>Good try (21-30 ms away): +50 points</li><li>Too early or too late: 0 points</li><li>Do not jump when a hurdle falls: +100 points</li><li>Jump by mistake: 0 points</li></ul><span>Get as close to perfect timing as you can!</span></div><p class="note">No names, accounts, or scores are saved.</p>`,
+        `<p><strong>Release the spacebar at the yellow line to jump over the hurdle!</strong></p><p>You are the hurdler. Hold the space bar to run, then release it to jump.</p><div class="score-tips"><strong>HOW SCORING WORKS</strong><ul><li>Almost perfect jump (0-10 ms away): +100 points</li><li>Close jump (11-20 ms away): +75 points</li><li>Good try (21-30 ms away): +50 points</li><li>Too early or too late: 0 points</li><li>Do not jump when a hurdle falls: +100 points</li><li>Jump by mistake: 0 points</li></ul><span>Get as close to perfect timing as you can!</span></div><p class="note">No names, accounts, or scores are saved.</p>`,
         button('NEXT', 'game1-instructions')
       )
     );
