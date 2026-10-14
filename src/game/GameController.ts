@@ -106,7 +106,7 @@ export class GameController {
     this.showScreen(
       screenShell(
         'GET READY',
-        `<p>You are the hurdler. Hold the space bar to run, then release it to jump.</p><div class="score-tips"><strong>HOW TO SCORE POINTS</strong><ul><li>Jump in the green zone = more points</li><li>Stop when a hurdle falls = more points</li><li>The better your timing, the higher your score</li></ul></div><p class="note">No names, accounts, or scores are saved.</p>`,
+        `<p>You are the hurdler. Hold the space bar to run, then release it to jump.</p><div class="score-tips"><strong>HOW SCORING WORKS</strong><ul><li>Best jumps near 800 ms = 100 points</li><li>Jumps from 770-830 ms count as on target</li><li>Close jumps can earn 75, 50, or 25 points</li><li>Far jumps still earn 10 points</li><li>Stop when a hurdle falls = 100 bonus points</li><li>Jump when it falls = lose 50 points</li></ul><span>The closer you are to 800 ms, the more points you get.</span></div><p class="note">No names, accounts, or scores are saved.</p>`,
         button('NEXT', 'game1-instructions')
       )
     );

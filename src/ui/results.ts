@@ -7,19 +7,13 @@ export function timingLine(trials: TrialData[], config: GameConfig): string {
     .filter((trial) => trial.valid && !trial.practice && trial.trialType === 'go' && trial.releaseTimeMs !== undefined)
     .map((trial) => trial.releaseTimeMs as number);
   const plottedValues = [config.goodWindowStartMs, config.goodWindowEndMs, config.targetTimeMs, ...releaseTimes];
-  const dataMin = Math.min(...plottedValues);
-  const dataMax = Math.max(...plottedValues);
-  const padding = Math.max(80, (dataMax - dataMin) * 0.18);
-  let scaleMin = Math.max(0, Math.floor((dataMin - padding) / 50) * 50);
-  let scaleMax = Math.ceil((dataMax + padding) / 50) * 50;
-
-  if (scaleMax - scaleMin < 300) {
-    const center = (scaleMin + scaleMax) / 2;
-    scaleMin = Math.max(0, Math.floor((center - 150) / 50) * 50);
-    scaleMax = Math.ceil((center + 150) / 50) * 50;
-  }
+  const farthestFromTarget = Math.max(...plottedValues.map((value) => Math.abs(value - config.targetTimeMs)));
+  const halfRange = Math.ceil(Math.max(150, farthestFromTarget + 60) / 50) * 50;
+  const scaleMin = config.targetTimeMs - halfRange;
+  const scaleMax = config.targetTimeMs + halfRange;
 
   const valueToLeft = (value: number): number => Math.max(0, Math.min(100, ((value - scaleMin) / (scaleMax - scaleMin)) * 100));
+  const formatPercent = (value: number): string => Number(value.toFixed(4)).toString();
   const usedLefts: number[] = [];
   const markers = releaseTimes
     .map((releaseTime) => {
@@ -27,7 +21,7 @@ export function timingLine(trials: TrialData[], config: GameConfig): string {
       const nearby = usedLefts.filter((usedLeft) => Math.abs(usedLeft - left) < 2.4).length;
       usedLefts.push(left);
       const top = [50, 36, 64, 24, 76][nearby % 5];
-      return `<span class="timing-dot" style="left:${left}%;top:${top}%"></span>`;
+      return `<span class="timing-dot" style="left:${formatPercent(left)}%;top:${top}%"></span>`;
     })
     .join('');
   const windowLeft = valueToLeft(config.goodWindowStartMs);
@@ -36,16 +30,16 @@ export function timingLine(trials: TrialData[], config: GameConfig): string {
 
   return `
     <div class="timing-line" aria-label="Timing line from earlier to later">
-      <span class="timing-window" style="left:${windowLeft}%;width:${windowRight - windowLeft}%"></span>
-      <span class="timing-window-label" style="left:${windowLeft + (windowRight - windowLeft) / 2}%">Great Timing!</span>
-      <span class="timing-target" style="left:${targetLeft}%"></span>
+      <span class="timing-window" style="left:${formatPercent(windowLeft)}%;width:${formatPercent(windowRight - windowLeft)}%"></span>
+      <span class="timing-window-label" style="left:${formatPercent(windowLeft + (windowRight - windowLeft) / 2)}%">Great Timing!</span>
+      <span class="timing-target" style="left:${formatPercent(targetLeft)}%"><span>800 ms</span></span>
       ${markers}
     </div>
     <div class="timing-labels">
       <span>EARLIER</span>
       <span>LATER</span>
     </div>
-    <p class="timing-help">Get your jump inside the green zone!</p>
+    <p class="timing-help">Closer to the middle line = better timing!</p>
   `;
 }
 
@@ -59,7 +53,7 @@ export function renderGame1Results(summary: Game1Summary, trials: TrialData[], c
       </article>
       <article><span>BEST JUMP</span><strong>${formatMsOff(summary.bestAbsoluteErrorMs)}</strong><small>Your closest jump!</small></article>
       <article><span>STEADINESS</span><strong>${formatMs(summary.standardDeviationReleaseMs)}</strong><small>How similar your jump timings were</small></article>
-      <article><span>ON TARGET</span><strong>${summary.percentageInTargetWindow}%</strong><small>${formatOutOf(summary.numberInTargetWindow, summary.count)} jumps in the target zone!</small></article>
+      <article><span>ON TARGET</span><strong>${summary.percentageInTargetWindow}%</strong><small>${formatOutOf(summary.numberInTargetWindow, summary.count)} jumps close to the middle line!</small></article>
     </section>
     ${timingLine(trials, config)}
   `;

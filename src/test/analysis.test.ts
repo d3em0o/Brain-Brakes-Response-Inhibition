@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CONFIG } from '../data/config';
 import type { TrialData } from '../data/types';
-import { completeGoTrial, summarizeGame1 } from '../analysis/game1Analysis';
+import { completeGoTrial, scoreGoTrial, summarizeGame1 } from '../analysis/game1Analysis';
 import { completeInhibitionTrial, estimateSSRT, nextSSD, summarizeGame2 } from '../analysis/inhibitionAnalysis';
 import { createGame2Plan, createPracticePlan } from '../game/Randomisation';
 import { TrialEngine } from '../game/TrialEngine';
@@ -62,6 +62,15 @@ describe('Game 1 timing calculations', () => {
   it('reports null consistency when fewer than two jump attempts exist', () => {
     const summary = summarizeGame1([goTrial(800)], DEFAULT_CONFIG);
     expect(summary.standardDeviationReleaseMs).toBeNull();
+  });
+
+  it('uses the displayed point bands for normal jumps', () => {
+    expect(scoreGoTrial(0)).toBe(100);
+    expect(scoreGoTrial(20)).toBe(100);
+    expect(scoreGoTrial(40)).toBe(75);
+    expect(scoreGoTrial(70)).toBe(50);
+    expect(scoreGoTrial(100)).toBe(25);
+    expect(scoreGoTrial(101)).toBe(10);
   });
 
   it('counts no-response normal hurdles as incorrect without adding timing error', () => {
@@ -492,9 +501,12 @@ describe('Game 2 results display', () => {
     const html = timingLine([goTrial(700), goTrial(760), goTrial(900)], DEFAULT_CONFIG);
     expect(html).toContain('class="timing-window"');
     expect(html).toContain('Great Timing!');
+    expect(html).toContain('left:42.5%;width:15%');
+    expect(html).toContain('class="timing-target" style="left:50%"');
+    expect(html).toContain('800 ms');
     expect(html).toContain('EARLIER');
     expect(html).toContain('LATER');
-    expect(html).toContain('Get your jump inside the green zone!');
+    expect(html).toContain('Closer to the middle line = better timing!');
   });
 
   it('keeps Stage 1 results simple for children', () => {
@@ -506,7 +518,7 @@ describe('Game 2 results display', () => {
     expect(html).toContain('0 ms off');
     expect(html).toContain('STEADINESS');
     expect(html).toContain('ON TARGET');
-    expect(html).toContain('1 out of 3 jumps in the target zone!');
+    expect(html).toContain('1 out of 3 jumps close to the middle line!');
   });
 });
 

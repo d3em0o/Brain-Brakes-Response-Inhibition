@@ -146,6 +146,11 @@ input {
   margin-bottom: 6px;
 }
 
+.score-tips span {
+  color: #43516a;
+  font-size: 0.98rem;
+}
+
 .score-tips ul {
   margin: 0;
   padding-left: 22px;
@@ -321,6 +326,17 @@ input {
   border-radius: 50%;
   box-shadow: 0 0 0 3px #148a58;
   z-index: 2;
+}
+
+.timing-target span {
+  position: absolute;
+  left: 50%;
+  bottom: -30px;
+  transform: translateX(-50%);
+  color: #148a58;
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .timing-dot {
