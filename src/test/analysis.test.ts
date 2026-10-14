@@ -16,7 +16,7 @@ import {
   calculateRunningArmPose
 } from '../rendering/Runner';
 import { calculateGameComparison } from '../analysis/gameComparison';
-import { renderGame2Results, timingLine } from '../ui/results';
+import { renderGame1Results, renderGame2Results, timingLine } from '../ui/results';
 
 describe('Game 1 timing calculations', () => {
   it('starts a trial and records release time from monotonic timestamps', () => {
@@ -400,7 +400,7 @@ describe('personal Game 1 vs Game 2 jump comparison', () => {
 });
 
 describe('Game 2 results display', () => {
-  it('shows scientific inhibition and jump-timing metrics separately', () => {
+  it('uses child-friendly labels while preserving Game 2 calculations', () => {
     const html = renderGame2Results(
       {
         goSummary: summarizeGame1([goTrial(800, 2), goTrial(760, 2)], DEFAULT_CONFIG),
@@ -431,15 +431,17 @@ describe('Game 2 results display', () => {
       }
     );
 
-    expect(html).toContain('INHIBITION ACCURACY');
+    expect(html).toContain('STOP SCORE');
     expect(html).toContain('<strong>67%</strong>');
-    expect(html).toContain('2 / 3 STOP trials successfully inhibited');
-    expect(html).toContain('JUMP CONSISTENCY');
-    expect(html).toContain('STOP-CUE DELAY');
-    expect(html).toContain('JUMP TIMING BIAS');
-    expect(html).toContain('Target: 800 ms; window: 700-800 ms');
-    expect(html).toContain('-51 percentage points on-target accuracy');
-    expect(html).toContain('On target = jump executed within the acceptable timing window.');
+    expect(html).toContain('You stopped for 2 out of 3 falling hurdles!');
+    expect(html).toContain('JUMP ACCURACY');
+    expect(html).toContain('2 out of 2 normal jumps on target!');
+    expect(html).toContain('JUMP STEADINESS');
+    expect(html).toContain('GAME SCORE');
+    expect(html).toContain('NORMAL ROUND');
+    expect(html).toContain('TRICK ROUND');
+    expect(html).toContain('WHAT CHANGED?');
+    expect(html).toContain('On target: 80% -> 29%');
   });
 
   it('displays N/A instead of 0 ms when a timing group has no jump attempts', () => {
@@ -479,9 +481,22 @@ describe('Game 2 results display', () => {
   it('draws the timing graph on-target zone from the configured scoring window', () => {
     const html = timingLine([goTrial(700), goTrial(760), goTrial(900)], DEFAULT_CONFIG);
     expect(html).toContain('class="timing-window"');
-    expect(html).toContain('On Target');
-    expect(html).toContain('Ideal Jump');
-    expect(html).toContain('700-800 ms window');
+    expect(html).toContain('Great Timing!');
+    expect(html).toContain('EARLIER');
+    expect(html).toContain('LATER');
+    expect(html).toContain('Get your jump inside the green zone!');
+  });
+
+  it('keeps Stage 1 results simple for children', () => {
+    const summary = summarizeGame1([goTrial(800), goTrial(760), noJumpGoTrial()], DEFAULT_CONFIG);
+    const html = renderGame1Results(summary, [goTrial(800), goTrial(760), noJumpGoTrial()], DEFAULT_CONFIG);
+    expect(html).toContain('YOUR TIMING');
+    expect(html).toContain('20 ms off');
+    expect(html).toContain('BEST JUMP');
+    expect(html).toContain('0 ms off');
+    expect(html).toContain('STEADINESS');
+    expect(html).toContain('ON TARGET');
+    expect(html).toContain('2 out of 3 jumps in the target zone!');
   });
 });
 

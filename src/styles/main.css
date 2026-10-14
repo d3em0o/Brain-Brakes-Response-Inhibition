@@ -194,10 +194,11 @@ input {
   margin: 5px 0;
   font-size: clamp(1.6rem, 3.6vw, 3.2rem);
   line-height: 1;
+  overflow-wrap: anywhere;
 }
 
 .result-grid .stat-value-compact {
-  font-size: clamp(1.35rem, 2.7vw, 2.35rem);
+  font-size: clamp(1.2rem, 2.4vw, 2.15rem);
 }
 
 .comparison-panel {
@@ -236,6 +237,7 @@ input {
   margin: 4px 0;
   font-size: clamp(1.45rem, 3vw, 2.4rem);
   line-height: 1;
+  overflow-wrap: anywhere;
 }
 
 .comparison-note {
@@ -246,8 +248,8 @@ input {
 
 .timing-line {
   position: relative;
-  height: 70px;
-  margin: 26px 0 4px;
+  height: 86px;
+  margin: 28px 8px 4px;
 }
 
 .timing-line::before {
@@ -266,20 +268,20 @@ input {
 .timing-window {
   position: absolute;
   top: 50%;
-  height: 46px;
+  height: 52px;
   transform: translateY(-50%);
   border: 2px solid rgba(20, 138, 88, 0.72);
   border-radius: 6px;
-  background: rgba(47, 174, 110, 0.22);
+  background: rgba(47, 174, 110, 0.28);
   z-index: 1;
 }
 
 .timing-window-label {
   position: absolute;
-  top: 3px;
+  top: 0;
   transform: translateX(-50%);
   color: #148a58;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   font-weight: 900;
   white-space: nowrap;
   z-index: 4;
@@ -288,23 +290,14 @@ input {
 .timing-target {
   position: absolute;
   top: 50%;
-  width: 5px;
-  height: 54px;
+  width: 7px;
+  height: 7px;
   transform: translate(-50%, -50%);
   background: #148a58;
-  border-radius: 3px;
+  border: 2px solid #fff9ea;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px #148a58;
   z-index: 2;
-}
-
-.timing-target span {
-  position: absolute;
-  left: 50%;
-  bottom: -22px;
-  transform: translateX(-50%);
-  color: #148a58;
-  font-size: 0.8rem;
-  font-weight: 900;
-  white-space: nowrap;
 }
 
 .timing-dot {
@@ -324,6 +317,13 @@ input {
   justify-content: space-between;
   gap: 12px;
   font-weight: 850;
+}
+
+.timing-help {
+  margin: 8px 0 18px;
+  color: #43516a;
+  font-weight: 850;
+  text-align: center;
 }
 
 .fine-print,
@@ -428,6 +428,15 @@ input {
   .comparison-stats,
   .explain-grid {
     grid-template-columns: 1fr;
+  }
+
+  .timing-line {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .timing-window-label {
+    font-size: 0.78rem;
   }
 
   .touch-hold {

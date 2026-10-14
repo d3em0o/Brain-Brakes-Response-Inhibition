@@ -6,27 +6,46 @@ export function timingLine(trials: TrialData[], config: GameConfig): string {
   const releaseTimes = trials
     .filter((trial) => trial.valid && !trial.practice && trial.trialType === 'go' && trial.releaseTimeMs !== undefined)
     .map((trial) => trial.releaseTimeMs as number);
-  const scaleMin = Math.min(500, config.goodWindowStartMs - 100, ...releaseTimes);
-  const scaleMax = Math.max(1100, config.goodWindowEndMs + 100, ...releaseTimes);
+  const plottedValues = [config.goodWindowStartMs, config.goodWindowEndMs, config.targetTimeMs, ...releaseTimes];
+  const dataMin = Math.min(...plottedValues);
+  const dataMax = Math.max(...plottedValues);
+  const padding = Math.max(80, (dataMax - dataMin) * 0.18);
+  let scaleMin = Math.max(0, Math.floor((dataMin - padding) / 50) * 50);
+  let scaleMax = Math.ceil((dataMax + padding) / 50) * 50;
+
+  if (scaleMax - scaleMin < 300) {
+    const center = (scaleMin + scaleMax) / 2;
+    scaleMin = Math.max(0, Math.floor((center - 150) / 50) * 50);
+    scaleMax = Math.ceil((center + 150) / 50) * 50;
+  }
+
   const valueToLeft = (value: number): number => Math.max(0, Math.min(100, ((value - scaleMin) / (scaleMax - scaleMin)) * 100));
+  const usedLefts: number[] = [];
   const markers = releaseTimes
-    .map((releaseTime) => `<span class="timing-dot" style="left:${valueToLeft(releaseTime)}%"></span>`)
+    .map((releaseTime) => {
+      const left = valueToLeft(releaseTime);
+      const nearby = usedLefts.filter((usedLeft) => Math.abs(usedLeft - left) < 2.4).length;
+      usedLefts.push(left);
+      const top = [50, 36, 64, 24, 76][nearby % 5];
+      return `<span class="timing-dot" style="left:${left}%;top:${top}%"></span>`;
+    })
     .join('');
   const windowLeft = valueToLeft(config.goodWindowStartMs);
   const windowRight = valueToLeft(config.goodWindowEndMs);
   const targetLeft = valueToLeft(config.targetTimeMs);
+
   return `
-    <div class="timing-line" aria-label="Timing line from early to late">
+    <div class="timing-line" aria-label="Timing line from earlier to later">
       <span class="timing-window" style="left:${windowLeft}%;width:${windowRight - windowLeft}%"></span>
-      <span class="timing-window-label" style="left:${windowLeft + (windowRight - windowLeft) / 2}%">On Target</span>
-      <span class="timing-target" style="left:${targetLeft}%"><span>Ideal Jump</span></span>
+      <span class="timing-window-label" style="left:${windowLeft + (windowRight - windowLeft) / 2}%">Great Timing!</span>
+      <span class="timing-target" style="left:${targetLeft}%"></span>
       ${markers}
     </div>
     <div class="timing-labels">
-      <span>EARLY</span>
-      <span>${config.goodWindowStartMs}-${config.goodWindowEndMs} ms window</span>
-      <span>LATE</span>
+      <span>EARLIER</span>
+      <span>LATER</span>
     </div>
+    <p class="timing-help">Get your jump inside the green zone!</p>
   `;
 }
 
@@ -34,56 +53,52 @@ export function renderGame1Results(summary: Game1Summary, trials: TrialData[], c
   return `
     <section class="result-grid">
       <article class="stat-primary">
-        <span>YOUR JUMP TIMING</span>
-        <strong>${formatMs(summary.meanAbsoluteErrorMs)}</strong>
-        <small>average timing error from ${summary.jumpAttemptCount} jump attempts</small>
+        <span>YOUR TIMING</span>
+        <strong>${formatMsOff(summary.meanAbsoluteErrorMs)}</strong>
+        <small>Your average distance from a perfect jump</small>
       </article>
-      <article><span>BEST JUMP</span><strong>${formatMs(summary.bestAbsoluteErrorMs)}</strong><small>away</small></article>
-      <article><span>CONSISTENCY</span><strong>${summary.standardDeviationReleaseMs === null ? 'N/A' : `+/-${summary.standardDeviationReleaseMs} ms`}</strong><small>release spread</small></article>
-      <article><span>NORMAL JUMP ACCURACY</span><strong>${summary.percentageIn700to800Window}%</strong><small>${summary.numberIn700to800Window} / ${summary.count} normal hurdles on target</small></article>
+      <article><span>BEST JUMP</span><strong>${formatMsOff(summary.bestAbsoluteErrorMs)}</strong><small>Your closest jump!</small></article>
+      <article><span>STEADINESS</span><strong>${formatMs(summary.standardDeviationReleaseMs)}</strong><small>How similar your jump timings were</small></article>
+      <article><span>ON TARGET</span><strong>${summary.percentageIn700to800Window}%</strong><small>${formatOutOf(summary.numberIn700to800Window, summary.count)} jumps in the target zone!</small></article>
     </section>
     ${timingLine(trials, config)}
   `;
 }
 
 export function renderGame2Results(summary: Game2Summary, comparison: GameComparisonSummary): string {
-  const windowLabel = timingWindowLabel(comparison);
   return `
     <section class="result-grid">
       <article class="stat-primary">
-        <span>INHIBITION ACCURACY</span>
+        <span>STOP SCORE</span>
         <strong>${summary.inhibitionSuccessPercent}%</strong>
-        <small>${summary.inhibitionSuccesses} / ${summary.inhibitionTrials} STOP trials successfully inhibited</small>
+        <small>You stopped for ${formatOutOf(summary.inhibitionSuccesses, summary.inhibitionTrials)} falling hurdles!</small>
       </article>
-      <article><span>JUMP CONSISTENCY</span><strong>${formatMs(summary.goSummary.standardDeviationReleaseMs)}</strong><small>variation in GO jump timing (SD)</small></article>
-      <article><span>STOP-CUE DELAY</span><strong>${formatMs(summary.meanStopCueDelayMs)}</strong><small>average falling-hurdle cue after run start</small></article>
-      <article><span>JUMP TIMING BIAS</span><strong class="stat-value-compact">${formatBias(summary.goSummary.meanSignedErrorMs)}</strong><small>average early or late tendency</small></article>
+      <article><span>JUMP ACCURACY</span><strong>${summary.goSummary.percentageIn700to800Window}%</strong><small>${formatOutOf(summary.goSummary.numberIn700to800Window, summary.goSummary.count)} normal jumps on target!</small></article>
+      <article><span>JUMP STEADINESS</span><strong>${formatMs(summary.goSummary.standardDeviationReleaseMs)}</strong><small>How steady your jump timing was</small></article>
+      <article><span>GAME SCORE</span><strong class="stat-value-compact">${summary.score} points</strong><small>Your total points!</small></article>
     </section>
     <section class="comparison-panel">
       <h2>COMPARE YOUR PERFORMANCE</h2>
       <div class="comparison-stats">
         <article>
-          <span>BEFORE FAKE-OUTS</span>
-          <strong>${formatMs(comparison.baselineMeanAbsoluteErrorMs)}</strong>
-          <small>mean absolute jump timing error</small>
-          <small>${comparison.baselineAccuracyPercent}% on target - ${comparison.baselineOnTargetCount} / ${comparison.baselineCount} eligible GO trials</small>
-          <small>${windowLabel}</small>
+          <span>NORMAL ROUND</span>
+          <strong>${formatMsOff(comparison.baselineMeanAbsoluteErrorMs)}</strong>
+          <small>${comparison.baselineAccuracyPercent}% on target</small>
+          <small>Your jumps before the tricks!</small>
         </article>
         <article>
-          <span>DURING FAKE-OUTS</span>
-          <strong>${formatMs(comparison.fakeoutGoMeanAbsoluteErrorMs)}</strong>
-          <small>mean absolute jump timing error</small>
-          <small>${comparison.fakeoutGoAccuracyPercent}% on target - ${comparison.fakeoutOnTargetCount} / ${comparison.fakeoutGoCount} eligible GO trials</small>
-          <small>${windowLabel}</small>
+          <span>TRICK ROUND</span>
+          <strong>${formatMsOff(comparison.fakeoutGoMeanAbsoluteErrorMs)}</strong>
+          <small>${comparison.fakeoutGoAccuracyPercent}% on target</small>
+          <small>Your jumps with surprise hurdles!</small>
         </article>
         <article>
-          <span>CHANGE WITH FAKE-OUTS</span>
-          <strong>${formatSignedMs(comparison.differenceMs)}</strong>
-          <small>${formatSignedPercentagePoints(comparison.accuracyDifferencePercentagePoints)} on-target accuracy</small>
-          <small>change in performance</small>
+          <span>WHAT CHANGED?</span>
+          <strong>${formatSignedMsOff(comparison.differenceMs)}</strong>
+          <small>On target: ${comparison.baselineAccuracyPercent}% -> ${comparison.fakeoutGoAccuracyPercent}%</small>
+          <small>See how your jumping changed!</small>
         </article>
       </div>
-      <p class="comparison-note">On target = jump executed within the acceptable timing window.</p>
     </section>
   `;
 }
@@ -92,21 +107,15 @@ function formatMs(value: number | null): string {
   return value === null ? 'N/A' : `${value} ms`;
 }
 
-function formatSignedMs(value: number | null): string {
+function formatMsOff(value: number | null): string {
+  return value === null ? 'N/A' : `${value} ms off`;
+}
+
+function formatSignedMsOff(value: number | null): string {
   if (value === null) return 'N/A';
-  return `${value >= 0 ? '+' : ''}${value} ms`;
+  return `${value >= 0 ? '+' : ''}${value} ms off`;
 }
 
-function formatBias(value: number | null): string {
-  if (value === null) return 'N/A';
-  if (value === 0) return '0 ms (On target)';
-  return `${value > 0 ? '+' : ''}${value} ms (${value < 0 ? 'Early' : 'Late'})`;
-}
-
-function formatSignedPercentagePoints(value: number): string {
-  return `${value >= 0 ? '+' : ''}${value} percentage points`;
-}
-
-function timingWindowLabel(comparison: GameComparisonSummary): string {
-  return `Target: ${comparison.targetTimeMs} ms; window: ${comparison.windowStartMs}-${comparison.windowEndMs} ms`;
+function formatOutOf(value: number, total: number): string {
+  return `${value} out of ${total}`;
 }
