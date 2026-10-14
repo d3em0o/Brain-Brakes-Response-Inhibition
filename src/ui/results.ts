@@ -44,6 +44,8 @@ export function timingLine(trials: TrialData[], config: GameConfig): string {
 }
 
 export function renderGame1Results(summary: Game1Summary, trials: TrialData[], config: GameConfig): string {
+  const maxScore = config.game1ScoredTrials * 100;
+  const score = clampScore(summary.score, maxScore);
   return `
     <section class="result-grid">
       <article class="stat-primary">
@@ -55,11 +57,17 @@ export function renderGame1Results(summary: Game1Summary, trials: TrialData[], c
       <article><span>STEADINESS</span><strong>${formatMs(summary.standardDeviationReleaseMs)}</strong><small>How similar your jump timings were</small></article>
       <article><span>ON TARGET</span><strong>${summary.percentageInTargetWindow}%</strong><small>${formatOutOf(summary.numberInTargetWindow, summary.count)} jumps close to the middle line!</small></article>
     </section>
+    <section class="score-panel">
+      <span>ROUND 1 SCORE</span>
+      <strong>${formatNumber(score)} / ${formatNumber(maxScore)} points</strong>
+      <div class="score-meter" aria-hidden="true"><span style="width:${scorePercent(score, maxScore)}%"></span></div>
+    </section>
     ${timingLine(trials, config)}
   `;
 }
 
-export function renderGame2Results(summary: Game2Summary, comparison: GameComparisonSummary): string {
+export function renderGame2Results(summary: Game2Summary, comparison: GameComparisonSummary, totalScore: number, maxScore: number): string {
+  const score = clampScore(totalScore, maxScore);
   return `
     <section class="result-grid">
       <article class="stat-primary">
@@ -69,7 +77,7 @@ export function renderGame2Results(summary: Game2Summary, comparison: GameCompar
       </article>
       <article><span>JUMP ACCURACY</span><strong>${summary.goSummary.percentageInTargetWindow}%</strong><small>${formatOutOf(summary.goSummary.numberInTargetWindow, summary.goSummary.count)} normal jumps on target!</small></article>
       <article><span>STEADINESS</span><strong>${formatMs(summary.goSummary.standardDeviationReleaseMs)}</strong><small>How steady your jump timing was</small></article>
-      <article><span>GAME SCORE</span><strong class="stat-value-compact">${summary.score} points</strong><small>Your total points!</small></article>
+      <article><span>GAME SCORE</span><strong class="stat-value-compact">${formatNumber(score)} / ${formatNumber(maxScore)} points</strong><small>Your total points!</small><div class="score-meter compact" aria-hidden="true"><span style="width:${scorePercent(score, maxScore)}%"></span></div></article>
     </section>
     <section class="comparison-panel">
       <h2>COMPARE YOUR PERFORMANCE</h2>
@@ -112,4 +120,16 @@ function formatSignedMsOff(value: number | null): string {
 
 function formatOutOf(value: number, total: number): string {
   return `${value} out of ${total}`;
+}
+
+function clampScore(score: number, maxScore: number): number {
+  return Math.max(0, Math.min(score, maxScore));
+}
+
+function scorePercent(score: number, maxScore: number): number {
+  return maxScore ? Math.round((score / maxScore) * 100) : 0;
+}
+
+function formatNumber(value: number): string {
+  return value.toLocaleString('en-US');
 }

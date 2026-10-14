@@ -26,7 +26,7 @@ export function completeInhibitionTrial(trial: TrialData, config: GameConfig, cu
     releasedBeforeCue,
     inhibitionSuccess,
     ssdAfterTrialMs: next,
-    points: inhibitionSuccess ? 100 : -50
+    points: inhibitionSuccess ? 100 : 0
   };
 }
 

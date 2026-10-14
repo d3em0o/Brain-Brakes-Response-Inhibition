@@ -4,20 +4,19 @@ import { mean, median, roundMs, standardDeviation } from './statistics';
 
 export function scoreGoTrial(absoluteErrorMs?: number): number {
   if (absoluteErrorMs === undefined) return 0;
-  if (absoluteErrorMs <= 20) return 100;
-  if (absoluteErrorMs <= 40) return 75;
-  if (absoluteErrorMs <= 70) return 50;
-  if (absoluteErrorMs <= 100) return 25;
-  return 10;
+  const roundedError = Math.round(absoluteErrorMs);
+  if (roundedError <= 10) return 100;
+  if (roundedError <= 20) return 75;
+  if (roundedError <= 30) return 50;
+  return 0;
 }
 
 export function categorizeGoTrial(signedErrorMs?: number): string {
   if (signedErrorMs === undefined) return 'TRY AGAIN';
   const error = Math.abs(signedErrorMs);
-  if (error <= 20) return 'PERFECT TIMING';
-  if (error <= 40) return 'GREAT';
-  if (error <= 70) return 'CLOSE';
-  if (error <= 100) return 'NEARLY';
+  if (error <= 10) return 'PERFECT TIMING';
+  if (error <= 20) return 'GREAT';
+  if (error <= 30) return 'CLOSE';
   return signedErrorMs < 0 ? 'TOO EARLY' : 'TOO LATE';
 }
 

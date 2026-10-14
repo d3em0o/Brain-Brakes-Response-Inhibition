@@ -66,11 +66,11 @@ describe('Game 1 timing calculations', () => {
 
   it('uses the displayed point bands for normal jumps', () => {
     expect(scoreGoTrial(0)).toBe(100);
-    expect(scoreGoTrial(20)).toBe(100);
-    expect(scoreGoTrial(40)).toBe(75);
-    expect(scoreGoTrial(70)).toBe(50);
-    expect(scoreGoTrial(100)).toBe(25);
-    expect(scoreGoTrial(101)).toBe(10);
+    expect(scoreGoTrial(10)).toBe(100);
+    expect(scoreGoTrial(20)).toBe(75);
+    expect(scoreGoTrial(30)).toBe(50);
+    expect(scoreGoTrial(31)).toBe(0);
+    expect(scoreGoTrial(undefined)).toBe(0);
   });
 
   it('counts no-response normal hurdles as incorrect without adding timing error', () => {
@@ -145,7 +145,7 @@ describe('Game 2 inhibition calculations', () => {
     expect(trial.jumped).toBe(true);
     expect(trial.correct).toBe(false);
     expect(trial.timingErrorMs).toBeNull();
-    expect(trial.points).toBe(-50);
+    expect(trial.points).toBe(0);
     expect(trial.absoluteErrorMs).toBeUndefined();
   });
 
@@ -164,13 +164,12 @@ describe('Game 2 inhibition calculations', () => {
     expect(nextSSD(450, false, DEFAULT_CONFIG)).toBe(450);
   });
 
-  it('creates exactly 7 GO and 3 inhibition trials with two initial GO trials', () => {
-    const plan = createGame2Plan(7, 3, seededRandom(1));
+  it('creates the fixed Game 2 falling-hurdle sequence', () => {
+    const plan = createGame2Plan(6, 4, seededRandom(1));
     expect(plan).toHaveLength(10);
-    expect(plan.filter((trial) => trial === 'go')).toHaveLength(7);
-    expect(plan.filter((trial) => trial === 'inhibition')).toHaveLength(3);
-    expect(plan[0]).toBe('go');
-    expect(plan[1]).toBe('go');
+    expect(plan).toEqual(['go', 'go', 'inhibition', 'go', 'go', 'inhibition', 'inhibition', 'go', 'go', 'inhibition']);
+    expect(plan.filter((trial) => trial === 'go')).toHaveLength(6);
+    expect(plan.filter((trial) => trial === 'inhibition')).toHaveLength(4);
   });
 
   it('prevents more than two inhibition trials consecutively', () => {
@@ -195,9 +194,9 @@ describe('Game 2 inhibition calculations', () => {
     expect(summary.inhibitionTrials).toBe(1);
   });
 
-  it('includes successful inhibition rewards and failed inhibition penalties in game score', () => {
+  it('includes successful inhibition rewards and gives failed inhibitions zero points', () => {
     const summary = summarizeGame2([goTrial(800, 2), stopTrial(undefined, 500), stopTrial(800, 500)], DEFAULT_CONFIG, 800);
-    expect(summary.score).toBe(150);
+    expect(summary.score).toBe(200);
     expect(summary.falseJumps).toBe(1);
   });
 
@@ -247,11 +246,12 @@ describe('Game 2 inhibition calculations', () => {
 });
 
 describe('hurdle collapse trial safety', () => {
-  it('generates 7 GO and 3 inhibition trials for the default scored Game 2 plan', () => {
+  it('generates 6 GO and 4 inhibition trials for the default scored Game 2 plan', () => {
     const plan = createGame2Plan(DEFAULT_CONFIG.game2GoTrials, DEFAULT_CONFIG.game2InhibitionTrials, seededRandom(2));
     expect(plan).toHaveLength(10);
-    expect(plan.filter((trial) => trial === 'go')).toHaveLength(7);
-    expect(plan.filter((trial) => trial === 'inhibition')).toHaveLength(3);
+    expect(plan).toEqual(['go', 'go', 'inhibition', 'go', 'go', 'inhibition', 'inhibition', 'go', 'go', 'inhibition']);
+    expect(plan.filter((trial) => trial === 'go')).toHaveLength(6);
+    expect(plan.filter((trial) => trial === 'inhibition')).toHaveLength(4);
   });
 
   it('assigns null SSDs to every GO trial', () => {
@@ -261,7 +261,7 @@ describe('hurdle collapse trial safety', () => {
       engine.startTrial(index + 1, 2, trialType, false, 'keyboard', 0, trialType === 'inhibition' ? DEFAULT_CONFIG.initialSSDms : null)
     );
     const goTrials = trials.filter((trial) => trial.trialType === 'go');
-    expect(goTrials).toHaveLength(7);
+    expect(goTrials).toHaveLength(6);
     expect(goTrials.every((trial) => trial.scheduledSSDms === null)).toBe(true);
     expect(goTrials.every((trial) => trial.collapseTriggered === false)).toBe(true);
     expect(goTrials.every((trial) => trial.hurdleState === 'upright')).toBe(true);
@@ -309,12 +309,7 @@ describe('hurdle collapse trial safety', () => {
   it('validates many generated short Game 2 sessions', () => {
     for (let seed = 1; seed <= 200; seed += 1) {
       const plan = createGame2Plan(DEFAULT_CONFIG.game2GoTrials, DEFAULT_CONFIG.game2InhibitionTrials, seededRandom(seed));
-      expect(plan).toHaveLength(10);
-      expect(plan[0]).toBe('go');
-      expect(plan[1]).toBe('go');
-      expect(plan.filter((trial) => trial === 'go')).toHaveLength(7);
-      expect(plan.filter((trial) => trial === 'inhibition')).toHaveLength(3);
-      expect(plan.join('')).not.toContain('inhibitioninhibitioninhibition');
+      expect(plan).toEqual(['go', 'go', 'inhibition', 'go', 'go', 'inhibition', 'inhibition', 'go', 'go', 'inhibition']);
     }
   });
 
@@ -447,7 +442,9 @@ describe('Game 2 results display', () => {
         baselineAccuracyPercent: 80,
         fakeoutGoAccuracyPercent: 29,
         accuracyDifferencePercentagePoints: -51
-      }
+      },
+      1625,
+      2000
     );
 
     expect(html).toContain('STOP SCORE');
@@ -457,6 +454,7 @@ describe('Game 2 results display', () => {
     expect(html).toContain('1 out of 2 normal jumps on target!');
     expect(html).toContain('STEADINESS');
     expect(html).toContain('GAME SCORE');
+    expect(html).toContain('1,625 / 2,000 points');
     expect(html).toContain('NORMAL ROUND');
     expect(html).toContain('TRICK ROUND');
     expect(html).toContain('WHAT CHANGED?');
@@ -491,7 +489,9 @@ describe('Game 2 results display', () => {
         baselineAccuracyPercent: 0,
         fakeoutGoAccuracyPercent: 0,
         accuracyDifferencePercentagePoints: 0
-      }
+      },
+      100,
+      2000
     );
 
     expect(html).toContain('<strong>N/A</strong>');
@@ -519,6 +519,8 @@ describe('Game 2 results display', () => {
     expect(html).toContain('STEADINESS');
     expect(html).toContain('ON TARGET');
     expect(html).toContain('1 out of 3 jumps close to the middle line!');
+    expect(html).toContain('ROUND 1 SCORE');
+    expect(html).toContain('100 / 1,000 points');
   });
 });
 

@@ -229,6 +229,44 @@ input {
   font-size: clamp(1.2rem, 2.4vw, 2.15rem);
 }
 
+.score-panel {
+  margin: 12px 0 18px;
+  padding: 12px 14px;
+  border: 3px solid #24334c;
+  border-radius: 8px;
+  background: #f8f3e0;
+}
+
+.score-panel span,
+.score-panel strong {
+  display: block;
+  font-weight: 900;
+}
+
+.score-panel strong {
+  margin: 4px 0 8px;
+  font-size: clamp(1.35rem, 3vw, 2.2rem);
+}
+
+.score-meter {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(36, 51, 76, 0.2);
+}
+
+.score-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2fae6e;
+}
+
+.score-meter.compact {
+  margin-top: 8px;
+  height: 10px;
+}
+
 .comparison-panel {
   margin: 16px 0 0;
   padding-top: 14px;

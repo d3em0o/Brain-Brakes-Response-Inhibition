@@ -106,7 +106,7 @@ export class GameController {
     this.showScreen(
       screenShell(
         'GET READY',
-        `<p>You are the hurdler. Hold the space bar to run, then release it to jump.</p><div class="score-tips"><strong>HOW SCORING WORKS</strong><ul><li>Best jumps near 800 ms = 100 points</li><li>Jumps from 770-830 ms count as on target</li><li>Close jumps can earn 75, 50, or 25 points</li><li>Far jumps still earn 10 points</li><li>Stop when a hurdle falls = 100 bonus points</li><li>Jump when it falls = lose 50 points</li></ul><span>The closer you are to 800 ms, the more points you get.</span></div><p class="note">No names, accounts, or scores are saved.</p>`,
+        `<p>You are the hurdler. Hold the space bar to run, then release it to jump.</p><div class="score-tips"><strong>HOW SCORING WORKS</strong><ul><li>Almost perfect jump (0-10 ms away): +100 points</li><li>Close jump (11-20 ms away): +75 points</li><li>Good try (21-30 ms away): +50 points</li><li>Too early or too late: 0 points</li><li>Do not jump when a hurdle falls: +100 points</li><li>Jump by mistake: 0 points</li></ul><span>Get as close to perfect timing as you can!</span></div><p class="note">No names, accounts, or scores are saved.</p>`,
         button('NEXT', 'game1-instructions')
       )
     );
@@ -312,10 +312,12 @@ export class GameController {
     const game1Summary = summarizeGame1(this.trials.filter((trial) => trial.game === 1), this.config);
     const game2Summary = summarizeGame2(this.trials, this.config, game1Summary.meanReleaseTimeMs);
     const comparison = calculateGameComparison(this.trials, this.config);
+    const maxScore = (this.config.game1ScoredTrials + this.config.game2TotalTrials) * 100;
+    const totalScore = game1Summary.score + game2Summary.score;
     this.showScreen(
       screenShell(
         'BRAIN BRAKES RESULTS',
-        renderGame2Results(game2Summary, comparison),
+        renderGame2Results(game2Summary, comparison, totalScore, maxScore),
         `${button('WHAT JUST HAPPENED?', 'education')}${this.debug ? button('EXPORT JSON', 'export-json', 'secondary') + button('EXPORT CSV', 'export-csv', 'secondary') : ''}`
       )
     );
@@ -448,10 +450,9 @@ export class GameController {
     if (trial.releaseTimeMs === undefined) return 'NO JUMP';
     if (trial.signedErrorMs === undefined) return 'TRY AGAIN';
     const error = Math.abs(trial.signedErrorMs);
-    if (error <= 20) return 'PERFECT TIMING';
-    if (error <= 40) return 'GREAT';
-    if (error <= 70) return 'CLOSE';
-    if (error <= 100) return 'NEARLY';
+    if (error <= 10) return 'PERFECT TIMING';
+    if (error <= 20) return 'GREAT';
+    if (error <= 30) return 'CLOSE';
     return trial.signedErrorMs < 0 ? 'TOO EARLY' : 'TOO LATE';
   }
 
