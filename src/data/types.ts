@@ -67,6 +67,7 @@ export interface Game2Summary {
   inhibitionSuccesses: number;
   inhibitionSuccessPercent: number;
   falseJumps: number;
+  meanStopCueDelayMs: number | null;
   meanSSDms: number;
   estimatedSSRTms: number;
   score: number;

@@ -37,6 +37,12 @@ export function summarizeGame2(trials: TrialData[], config: GameConfig, game1Mea
   const successes = inhibition.filter((trial) => trial.inhibitionSuccess).length;
   const falseJumps = inhibition.filter((trial) => trial.releaseTimeMs !== undefined).length;
   const meanSSDms = roundMs(mean(inhibition.map((trial) => trial.scheduledSSDms ?? 0).filter(Boolean)));
+  const stopCueDelays = inhibition
+    .map((trial) =>
+      trial.actualCuePresentationTime === null ? null : trial.actualCuePresentationTime - trial.trialStartTimestamp
+    )
+    .filter((delay): delay is number => delay !== null && Number.isFinite(delay) && delay >= 0);
+  const meanStopCueDelayMs = stopCueDelays.length ? roundMs(mean(stopCueDelays)) : null;
   const meanGo = goSummary.meanReleaseTimeMs ?? game1MeanReleaseMs ?? config.targetTimeMs;
   const estimatedSSRTms = roundMs(estimateSSRT(meanGo, meanSSDms));
   const successPercent = inhibition.length ? roundMs((successes / inhibition.length) * 100) : 0;
@@ -58,6 +64,7 @@ export function summarizeGame2(trials: TrialData[], config: GameConfig, game1Mea
     inhibitionSuccesses: successes,
     inhibitionSuccessPercent: successPercent,
     falseJumps,
+    meanStopCueDelayMs,
     meanSSDms,
     estimatedSSRTms,
     score: scored.reduce((sum, trial) => sum + trial.points, 0),

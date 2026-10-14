@@ -3,6 +3,9 @@ import type { TrialData } from '../data/types';
 import { summarizeGame1 } from './game1Analysis';
 
 export interface GameComparisonSummary {
+  targetTimeMs: number;
+  windowStartMs: number;
+  windowEndMs: number;
   baselineMeanAbsoluteErrorMs: number | null;
   fakeoutGoMeanAbsoluteErrorMs: number | null;
   differenceMs: number | null;
@@ -24,6 +27,9 @@ export function calculateGameComparison(trials: TrialData[], config: GameConfig)
   const fakeoutSummary = summarizeGame1(fakeoutGo, config);
 
   return {
+    targetTimeMs: config.targetTimeMs,
+    windowStartMs: config.goodWindowStartMs,
+    windowEndMs: config.goodWindowEndMs,
     baselineMeanAbsoluteErrorMs: baselineSummary.meanAbsoluteErrorMs,
     fakeoutGoMeanAbsoluteErrorMs: fakeoutSummary.meanAbsoluteErrorMs,
     differenceMs:

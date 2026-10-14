@@ -196,6 +196,10 @@ input {
   line-height: 1;
 }
 
+.result-grid .stat-value-compact {
+  font-size: clamp(1.35rem, 2.7vw, 2.35rem);
+}
+
 .comparison-panel {
   margin: 16px 0 0;
   padding-top: 14px;
@@ -214,7 +218,7 @@ input {
 }
 
 .comparison-stats article {
-  min-height: 94px;
+  min-height: 122px;
   padding: 12px;
   border: 3px solid #24334c;
   border-radius: 8px;
@@ -234,10 +238,16 @@ input {
   line-height: 1;
 }
 
+.comparison-note {
+  margin: 10px 0 0;
+  color: #43516a;
+  font-weight: 800;
+}
+
 .timing-line {
   position: relative;
-  height: 54px;
-  margin: 20px 0 4px;
+  height: 70px;
+  margin: 26px 0 4px;
 }
 
 .timing-line::before {
@@ -250,24 +260,48 @@ input {
   transform: translateY(-50%);
   background: #24334c;
   border-radius: 999px;
+  z-index: 0;
+}
+
+.timing-window {
+  position: absolute;
+  top: 50%;
+  height: 46px;
+  transform: translateY(-50%);
+  border: 2px solid rgba(20, 138, 88, 0.72);
+  border-radius: 6px;
+  background: rgba(47, 174, 110, 0.22);
+  z-index: 1;
+}
+
+.timing-window-label {
+  position: absolute;
+  top: 3px;
+  transform: translateX(-50%);
+  color: #148a58;
+  font-size: 0.82rem;
+  font-weight: 900;
+  white-space: nowrap;
+  z-index: 4;
 }
 
 .timing-target {
   position: absolute;
   top: 50%;
   width: 5px;
-  height: 44px;
+  height: 54px;
   transform: translate(-50%, -50%);
-  background: #c9322c;
+  background: #148a58;
   border-radius: 3px;
+  z-index: 2;
 }
 
 .timing-target span {
   position: absolute;
   left: 50%;
-  bottom: -20px;
+  bottom: -22px;
   transform: translateX(-50%);
-  color: #c9322c;
+  color: #148a58;
   font-size: 0.8rem;
   font-weight: 900;
   white-space: nowrap;
@@ -282,6 +316,7 @@ input {
   border: 3px solid #24334c;
   border-radius: 50%;
   background: #ffe066;
+  z-index: 3;
 }
 
 .timing-labels {

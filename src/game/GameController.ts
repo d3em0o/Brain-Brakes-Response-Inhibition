@@ -299,7 +299,7 @@ export class GameController {
       this.showScreen(
         screenShell(
           'YOUR JUMP TIMING',
-          renderGame1Results(summary, this.trials.filter((trial) => trial.game === 1), this.config.targetTimeMs),
+          renderGame1Results(summary, this.trials.filter((trial) => trial.game === 1), this.config),
           button('NEXT CHALLENGE', 'transition')
         )
       );

@@ -16,7 +16,7 @@ import {
   calculateRunningArmPose
 } from '../rendering/Runner';
 import { calculateGameComparison } from '../analysis/gameComparison';
-import { renderGame2Results } from '../ui/results';
+import { renderGame2Results, timingLine } from '../ui/results';
 
 describe('Game 1 timing calculations', () => {
   it('starts a trial and records release time from monotonic timestamps', () => {
@@ -57,6 +57,11 @@ describe('Game 1 timing calculations', () => {
     const summary = summarizeGame1([goTrial(700), goTrial(800), goTrial(900)], DEFAULT_CONFIG);
     expect(summary.meanReleaseTimeMs).toBe(800);
     expect(summary.standardDeviationReleaseMs).toBe(82);
+  });
+
+  it('reports null consistency when fewer than two jump attempts exist', () => {
+    const summary = summarizeGame1([goTrial(800)], DEFAULT_CONFIG);
+    expect(summary.standardDeviationReleaseMs).toBeNull();
   });
 
   it('counts no-response normal hurdles as incorrect without adding timing error', () => {
@@ -182,6 +187,21 @@ describe('Game 2 inhibition calculations', () => {
     expect(summary.meanSSDms).toBe(600);
     expect(summary.estimatedSSRTms).toBe(220);
     expect(estimateSSRT(814, 528)).toBe(286);
+  });
+
+  it('calculates stop-cue delay from actual cue timing when available', () => {
+    const earlyCue = {
+      ...stopTrial(undefined, 550),
+      trialStartTimestamp: 1000,
+      actualCuePresentationTime: 1532
+    };
+    const lateCue = {
+      ...stopTrial(undefined, 650),
+      trialStartTimestamp: 2000,
+      actualCuePresentationTime: 2676
+    };
+    const summary = summarizeGame2([earlyCue, lateCue], DEFAULT_CONFIG, 800);
+    expect(summary.meanStopCueDelayMs).toBe(604);
   });
 
   it('invalid trials are excluded from final summaries', () => {
@@ -352,6 +372,9 @@ describe('personal Game 1 vs Game 2 jump comparison', () => {
     expect(comparison.baselineAccuracyPercent).toBe(50);
     expect(comparison.fakeoutGoAccuracyPercent).toBe(50);
     expect(comparison.accuracyDifferencePercentagePoints).toBe(0);
+    expect(comparison.targetTimeMs).toBe(800);
+    expect(comparison.windowStartMs).toBe(700);
+    expect(comparison.windowEndMs).toBe(800);
   });
 
   it('uses all normal hurdles for comparison accuracy but only jump attempts for timing error', () => {
@@ -377,7 +400,7 @@ describe('personal Game 1 vs Game 2 jump comparison', () => {
 });
 
 describe('Game 2 results display', () => {
-  it('labels inhibition accuracy separately and clarifies normal jump denominators', () => {
+  it('shows scientific inhibition and jump-timing metrics separately', () => {
     const html = renderGame2Results(
       {
         goSummary: summarizeGame1([goTrial(800, 2), goTrial(760, 2)], DEFAULT_CONFIG),
@@ -385,12 +408,16 @@ describe('Game 2 results display', () => {
         inhibitionSuccesses: 2,
         inhibitionSuccessPercent: 67,
         falseJumps: 1,
+        meanStopCueDelayMs: 550,
         meanSSDms: 550,
         estimatedSSRTms: 250,
         score: 150,
         warnings: []
       },
       {
+        targetTimeMs: 800,
+        windowStartMs: 700,
+        windowEndMs: 800,
         baselineMeanAbsoluteErrorMs: 20,
         fakeoutGoMeanAbsoluteErrorMs: 40,
         differenceMs: 20,
@@ -406,10 +433,13 @@ describe('Game 2 results display', () => {
 
     expect(html).toContain('INHIBITION ACCURACY');
     expect(html).toContain('<strong>67%</strong>');
-    expect(html).toContain('2 / 3 falling hurdles correctly ignored');
-    expect(html).toContain('NORMAL JUMP ACCURACY');
-    expect(html).toContain('FALSE JUMPS');
-    expect(html).toContain('-51 percentage points accuracy');
+    expect(html).toContain('2 / 3 STOP trials successfully inhibited');
+    expect(html).toContain('JUMP CONSISTENCY');
+    expect(html).toContain('STOP-CUE DELAY');
+    expect(html).toContain('JUMP TIMING BIAS');
+    expect(html).toContain('Target: 800 ms; window: 700-800 ms');
+    expect(html).toContain('-51 percentage points on-target accuracy');
+    expect(html).toContain('On target = jump executed within the acceptable timing window.');
   });
 
   it('displays N/A instead of 0 ms when a timing group has no jump attempts', () => {
@@ -420,12 +450,16 @@ describe('Game 2 results display', () => {
         inhibitionSuccesses: 1,
         inhibitionSuccessPercent: 100,
         falseJumps: 0,
+        meanStopCueDelayMs: null,
         meanSSDms: 550,
         estimatedSSRTms: 250,
         score: 100,
         warnings: []
       },
       {
+        targetTimeMs: 800,
+        windowStartMs: 700,
+        windowEndMs: 800,
         baselineMeanAbsoluteErrorMs: null,
         fakeoutGoMeanAbsoluteErrorMs: null,
         differenceMs: null,
@@ -440,6 +474,14 @@ describe('Game 2 results display', () => {
     );
 
     expect(html).toContain('<strong>N/A</strong>');
+  });
+
+  it('draws the timing graph on-target zone from the configured scoring window', () => {
+    const html = timingLine([goTrial(700), goTrial(760), goTrial(900)], DEFAULT_CONFIG);
+    expect(html).toContain('class="timing-window"');
+    expect(html).toContain('On Target');
+    expect(html).toContain('Ideal Jump');
+    expect(html).toContain('700-800 ms window');
   });
 });
 
